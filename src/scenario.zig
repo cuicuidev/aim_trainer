@@ -4,12 +4,14 @@ const rl = @import("raylib");
 
 const bot = @import("bot.zig");
 const sp = @import("spawn_plane.zig");
+const geo = @import("geometry.zig");
 
 pub fn OneWallThreeTargetsSmall(comptime distance: f32) type {
-    const geometry_type = bot.BotGeometryType.sphere;
-    const geometry = bot.BotGeometry(geometry_type).init(0.3, 4.0);
-    const bot_type = bot.BotType.click;
-    const Bot = bot.Bot(geometry_type, geometry, bot_type);
+    const RADIUS = 0.3;
+    const HEIGHT = 4.0;
+    const COLOR = rl.Color.red;
+
+    const Bot = bot.Bot;
     return struct {
         spawn: sp.SpawnPlane,
         bots: [3]Bot,
@@ -22,11 +24,9 @@ pub fn OneWallThreeTargetsSmall(comptime distance: f32) type {
             return .{
                 .spawn = spawn,
                 .bots = .{
-                    Bot.init(spawn.getRandomPosition(), rl.Color.red),
-
-                    Bot.init(spawn.getRandomPosition(), rl.Color.red),
-
-                    Bot.init(spawn.getRandomPosition(), rl.Color.red),
+                    Bot.init(geo.Geometry{ .sphere = geo.Sphere.init(spawn.getRandomPosition(), RADIUS, COLOR) }),
+                    Bot.init(geo.Geometry{ .sphere = geo.Sphere.init(spawn.getRandomPosition(), RADIUS, COLOR) }),
+                    Bot.init(geo.Geometry{ .sphere = geo.Sphere.init(spawn.getRandomPosition(), RADIUS, COLOR) }),
                 },
                 .last_hit = null,
             };
@@ -46,7 +46,7 @@ pub fn OneWallThreeTargetsSmall(comptime distance: f32) type {
 
                 while (i < self.bots.len) : (i += 1) {
                     if (self.bots[i].hitScan(camera)) |hit_vec| {
-                        self.bots[i].position = self.spawn.getRandomPosition();
+                        self.bots[i].update(self.spawn.getRandomPosition(), RADIUS, COLOR, HEIGHT);
                         self.last_hit = hit_vec;
                         std.debug.print("V(x={d:2.2}, y={d:2.2}, z={d:2.2})\n", .{ hit_vec.x, hit_vec.y, hit_vec.z });
                     }
