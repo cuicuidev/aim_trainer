@@ -43,10 +43,11 @@ pub const Bot = struct {
         self.time += dt;
 
         // Params
-        const amplitude = 10.0;
+        const amplitude = 20.0;
         const freq = 2.0;
         const wander_strength = 3.0;
-        const max_speed = 20.0;
+        const min_speed = 20.0;
+        const max_speed = 30.0;
         const bias_strength: f32 = 1.5;
 
         const ax = amplitude * @sin(self.time * freq);
@@ -78,6 +79,9 @@ pub const Bot = struct {
         const speed_sq = rl.Vector3.lengthSqr(self.velocity);
         if (speed_sq > max_speed * max_speed) {
             self.velocity = rl.Vector3.scale(rl.Vector3.normalize(self.velocity), max_speed);
+        }
+        if (speed_sq < max_speed * @abs(max_speed)) {
+            self.velocity = rl.Vector3.scale(rl.Vector3.normalize(self.velocity), min_speed);
         }
 
         // Update position

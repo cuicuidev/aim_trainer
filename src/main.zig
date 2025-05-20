@@ -97,7 +97,15 @@ pub fn main() anyerror!void {
         if (scenario.last_hit) |last_hit| {
             const last_hit_text = try std.fmt.allocPrintZ(allocator, "V(x={d:2.2}, y={d:2.2}, z={d:2.2})", .{ last_hit.x, last_hit.y, last_hit.z });
             defer allocator.free(last_hit_text);
+
             rl.drawText(last_hit_text, screen_width - 300, 70, 20, rl.Color.dark_green);
+        }
+
+        if (scenario.total_frames != 0.0) {
+            const score = try std.fmt.allocPrintZ(allocator, "Score {d:2.2}", .{scenario.hit_frames / scenario.total_frames});
+            defer allocator.free(score);
+
+            rl.drawText(score, screen_width - 300, 100, 20, rl.Color.dark_green);
         }
         rl.drawCircle(screen_width - screen_width / 2, screen_height - screen_height / 2, 3.0, rl.Color.black);
         //----------------------------------------------------------------------------------

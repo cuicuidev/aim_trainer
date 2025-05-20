@@ -64,6 +64,8 @@ pub fn RawControl(comptime distance: f32) type {
         spawn: sp.SpawnPrism,
         bots: [1]bot.Bot,
         last_hit: ?rl.Vector3,
+        hit_frames: f64,
+        total_frames: f64,
 
         const Self = @This();
 
@@ -75,6 +77,8 @@ pub fn RawControl(comptime distance: f32) type {
                     bot.Bot.init(geo.Geometry{ .sphere = geo.Sphere.init(spawn.origin, RADIUS, COLOR) }),
                 },
                 .last_hit = null,
+                .hit_frames = 0,
+                .total_frames = 0,
             };
         }
 
@@ -90,17 +94,19 @@ pub fn RawControl(comptime distance: f32) type {
         }
 
         pub fn kill(self: *Self, camera: *rl.Camera3D) void {
-            if (rl.isMouseButtonPressed(rl.MouseButton.left)) {
+            if (rl.isMouseButtonDown(rl.MouseButton.left)) {
                 var i: usize = 0;
 
                 while (i < self.bots.len) : (i += 1) {
                     if (self.bots[i].hitScan(camera)) |hit_vec| {
-                        //self.bots[i].update(self.spawn.getRandomPosition(), RADIUS, COLOR, HEIGHT);
+                        // self.bots[i].update(self.spawn.getRandomPosition(), RADIUS, COLOR, HEIGHT);
                         self.last_hit = hit_vec;
-                        std.debug.print("V(x={d:2.2}, y={d:2.2}, z={d:2.2})\n", .{ hit_vec.x, hit_vec.y, hit_vec.z });
+                        self.hit_frames += 1.0;
+                        // std.debug.print("V(x={d:2.2}, y={d:2.2}, z={d:2.2})\n", .{ hit_vec.x, hit_vec.y, hit_vec.z });
                     }
                 }
             }
+            self.total_frames += 1.0;
         }
     };
 }
