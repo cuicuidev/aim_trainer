@@ -26,3 +26,14 @@ pub const Bot = struct {
         self.geometry.update(position, radius, color, height);
     }
 };
+
+pub const MovementProfile = struct {
+    v_start: rl.Vector3,
+    a_start: rl.Vector3,
+
+    v_min: rl.Vector3,
+    v_max: rl.Vector3,
+
+    a_min: rl.Vector3,
+    a_max: rl.Vector3,
+};

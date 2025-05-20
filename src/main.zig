@@ -16,6 +16,7 @@ pub fn main() anyerror!void {
 
     const config_flags = rl.ConfigFlags{
         .fullscreen_mode = true,
+        .msaa_4x_hint = true,
     };
 
     rl.setConfigFlags(config_flags);
@@ -40,7 +41,7 @@ pub fn main() anyerror!void {
     var sensitivity: f32 = 0.008; // adjust this to change sensitivity
 
     // Scenario
-    var scenario = scen.OneWallThreeTargetsSmall(50.0).init(&camera);
+    var scenario = scen.RawControl(50.0).init(&camera);
 
     // Main game loop
     while (!rl.windowShouldClose()) {
