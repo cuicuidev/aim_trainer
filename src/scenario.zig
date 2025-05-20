@@ -57,7 +57,7 @@ pub fn OneWallThreeTargetsSmall(comptime distance: f32) type {
 
 pub fn RawControl(comptime distance: f32) type {
     const RADIUS = 1.0;
-    const HEIGHT = null;
+    // const HEIGHT = null;
     const COLOR = rl.Color.red;
 
     return struct {
@@ -68,11 +68,11 @@ pub fn RawControl(comptime distance: f32) type {
         const Self = @This();
 
         pub fn init(camera: *rl.Camera3D) Self {
-            var spawn = sp.SpawnPrism.init(camera, distance, 60.0, 30.0, 20.0);
+            const spawn = sp.SpawnPrism.init(camera, distance, 60.0, 30.0, 20.0);
             return .{
                 .spawn = spawn,
                 .bots = .{
-                    bot.Bot.init(geo.Geometry{ .sphere = geo.Sphere.init(spawn.getRandomPosition(), RADIUS, COLOR) }),
+                    bot.Bot.init(geo.Geometry{ .sphere = geo.Sphere.init(spawn.origin, RADIUS, COLOR) }),
                 },
                 .last_hit = null,
             };
@@ -81,7 +81,10 @@ pub fn RawControl(comptime distance: f32) type {
         pub fn draw(self: *Self) void {
             self.spawn.draw(rl.Color.green);
 
+            const delta = rl.getFrameTime(); // dt for simulation
+
             for (&self.bots) |*b| {
+                b.step(delta, self.spawn.origin); // animate movement
                 b.draw();
             }
         }
@@ -92,7 +95,7 @@ pub fn RawControl(comptime distance: f32) type {
 
                 while (i < self.bots.len) : (i += 1) {
                     if (self.bots[i].hitScan(camera)) |hit_vec| {
-                        self.bots[i].update(self.spawn.getRandomPosition(), RADIUS, COLOR, HEIGHT);
+                        //self.bots[i].update(self.spawn.getRandomPosition(), RADIUS, COLOR, HEIGHT);
                         self.last_hit = hit_vec;
                         std.debug.print("V(x={d:2.2}, y={d:2.2}, z={d:2.2})\n", .{ hit_vec.x, hit_vec.y, hit_vec.z });
                     }
