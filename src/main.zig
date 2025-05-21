@@ -112,72 +112,77 @@ pub fn main() anyerror!void {
 
                 rl.drawText("Aimalytics", screen_width / 2, screen_height / 4, 20, rl.Color.black);
 
-                const play_clicking_btn = rl.Rectangle.init(screen_width / 2, screen_height / 2, 100, 50);
-                const play_tracking_btn = rl.Rectangle.init(screen_width / 2, screen_height - screen_height / 4, 100, 50);
+                const button_width = screen_width * 0.2;
+                const button_height = screen_height * 0.08;
 
-                const mouse_pos = rl.getMousePosition();
+                const play_clicking_btn = rl.Rectangle.init(
+                    (screen_width - button_width) / 2,
+                    screen_height / 2 - button_height * 1.5,
+                    button_width,
+                    button_height,
+                );
 
-                if (rl.checkCollisionPointRec(mouse_pos, play_clicking_btn)) {
-                    rl.drawRectangleRec(play_clicking_btn, rl.Color.white);
-                    if (rl.isMouseButtonPressed(rl.MouseButton.left)) {
-                        STATE = GameState.scenario;
-                        bot_config = bot.BotConfig{
-                            .n_bots = 3,
-                            .bot_initial_position = null,
-                            .geometry = bot.Geometry{
-                                .sphere = bot.geo.Sphere.init(
-                                    spawn.origin,
-                                    1.0,
-                                    rl.Color.red,
-                                    STATIC_CONFIG,
-                                ),
-                            },
-                        };
+                const play_tracking_btn = rl.Rectangle.init(
+                    (screen_width - button_width) / 2,
+                    screen_height / 2 + button_height * 0.5,
+                    button_width,
+                    button_height,
+                );
 
-                        scenario = try scen.Scenario.init(
-                            allocator,
-                            spawn,
-                            bot_config,
-                            scen.ScenarioType{
-                                .clicking = scen.Clicking{},
-                            },
-                        );
-                    }
-                } else {
-                    rl.drawRectangleRec(play_clicking_btn, rl.Color.black);
+                const base_color = rl.Color.dark_gray;
+                const hover_color = rl.Color.light_gray;
+                const text_color = rl.Color.black;
+
+                if (drawButton("Clicking", play_clicking_btn, base_color, hover_color, text_color)) {
+                    STATE = GameState.scenario;
+                    bot_config = bot.BotConfig{
+                        .n_bots = 3,
+                        .bot_initial_position = null,
+                        .geometry = bot.Geometry{
+                            .sphere = bot.geo.Sphere.init(
+                                spawn.origin,
+                                1.0,
+                                rl.Color.red,
+                                STATIC_CONFIG,
+                            ),
+                        },
+                    };
+
+                    scenario = try scen.Scenario.init(
+                        allocator,
+                        spawn,
+                        bot_config,
+                        scen.ScenarioType{
+                            .clicking = scen.Clicking{},
+                        },
+                    );
                 }
 
-                if (rl.checkCollisionPointRec(mouse_pos, play_tracking_btn)) {
-                    rl.drawRectangleRec(play_tracking_btn, rl.Color.white);
+                if (drawButton("Tracking", play_tracking_btn, base_color, hover_color, text_color)) {
+                    STATE = GameState.scenario;
+                    STATE = GameState.scenario;
+                    bot_config = bot.BotConfig{
+                        .n_bots = 1,
+                        .bot_initial_position = spawn.origin,
+                        .geometry = bot.Geometry{
+                            .capsule = bot.geo.Capsule.init(
+                                spawn.origin,
+                                1.0,
+                                3.0,
+                                rl.Color.red,
+                                KINETIC_CONFIG,
+                            ),
+                        },
+                    };
 
-                    if (rl.isMouseButtonPressed(rl.MouseButton.left)) {
-                        STATE = GameState.scenario;
-                        STATE = GameState.scenario;
-                        bot_config = bot.BotConfig{
-                            .n_bots = 1,
-                            .bot_initial_position = spawn.origin,
-                            .geometry = bot.Geometry{
-                                .capsule = bot.geo.Capsule.init(
-                                    spawn.origin,
-                                    1.0,
-                                    3.0,
-                                    rl.Color.red,
-                                    KINETIC_CONFIG,
-                                ),
-                            },
-                        };
-
-                        scenario = try scen.Scenario.init(
-                            allocator,
-                            spawn,
-                            bot_config,
-                            scen.ScenarioType{
-                                .tracking = scen.Tracking{},
-                            },
-                        );
-                    }
-                } else {
-                    rl.drawRectangleRec(play_tracking_btn, rl.Color.black);
+                    scenario = try scen.Scenario.init(
+                        allocator,
+                        spawn,
+                        bot_config,
+                        scen.ScenarioType{
+                            .tracking = scen.Tracking{},
+                        },
+                    );
                 }
 
                 if (rl.isKeyPressed(rl.KeyboardKey.escape)) {
@@ -250,6 +255,26 @@ pub fn main() anyerror!void {
             .exit => rl.closeWindow(),
         }
     }
+}
+
+fn drawButton(label: [:0]const u8, rect: rl.Rectangle, base_color: rl.Color, hover_color: rl.Color, text_color: rl.Color) bool {
+    const mouse_pos = rl.getMousePosition();
+    const is_hovered = rl.checkCollisionPointRec(mouse_pos, rect);
+    const is_clicked = is_hovered and rl.isMouseButtonPressed(rl.MouseButton.left);
+
+    const bg_color = if (is_hovered) hover_color else base_color;
+
+    rl.drawRectangleRec(rect, bg_color);
+
+    // Center text within button
+    const font_size = @as(i32, @intFromFloat(rect.height * 0.5));
+    const text_width = rl.measureText(label, font_size);
+    const text_x = @as(i32, @intFromFloat(rect.x + (rect.width - @as(f32, @floatFromInt(text_width))) / 2));
+    const text_y = @as(i32, @intFromFloat(rect.y + (rect.height - @as(f32, @floatFromInt(font_size))) / 2));
+
+    rl.drawText(label, text_x, text_y, font_size, text_color);
+
+    return is_clicked;
 }
 
 const STATIC_CONFIG = bot.mov.kinetic.KineticConfig{
