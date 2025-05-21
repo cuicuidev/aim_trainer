@@ -1,0 +1,7 @@
+        // Params
+        const amplitude = 20.0;
+        const freq = 2.0;
+        const wander_strength = 3.0;
+        const min_speed = 20.0;
+        const max_speed = 30.0;
+        const bias_strength: f32 = 1.5;

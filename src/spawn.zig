@@ -4,67 +4,67 @@ const rl = @import("raylib");
 
 const bot = @import("bot.zig");
 
-pub const SpawnPlane = struct {
-    origin: rl.Vector3,
-    right: rl.Vector3, // direction vector along the plane's width
-    forward: rl.Vector3, // direction vector along the plane's height
-    width: f32,
-    height: f32,
+// pub const SpawnPlane = struct {
+//     origin: rl.Vector3,
+//     right: rl.Vector3, // direction vector along the plane's width
+//     forward: rl.Vector3, // direction vector along the plane's height
+//     width: f32,
+//     height: f32,
 
-    const Self = @This();
+//     const Self = @This();
 
-    pub fn init(camera: *rl.Camera3D, distance: f32, width: f32, height: f32) Self {
-        const forward = rl.Vector3.normalize(rl.Vector3.subtract(camera.target, camera.position));
-        const right = rl.Vector3.normalize(rl.Vector3.crossProduct(forward, camera.up));
-        const up = rl.Vector3.normalize(camera.up);
+//     pub fn init(camera: *rl.Camera3D, distance: f32, width: f32, height: f32) Self {
+//         const forward = rl.Vector3.normalize(rl.Vector3.subtract(camera.target, camera.position));
+//         const right = rl.Vector3.normalize(rl.Vector3.crossProduct(forward, camera.up));
+//         const up = rl.Vector3.normalize(camera.up);
 
-        // Move the origin forward along the camera's direction
-        const origin = rl.Vector3.add(camera.position, rl.Vector3.scale(forward, distance));
+//         // Move the origin forward along the camera's direction
+//         const origin = rl.Vector3.add(camera.position, rl.Vector3.scale(forward, distance));
 
-        return .{
-            .origin = origin,
-            .right = right,
-            .forward = up,
-            .width = width,
-            .height = height,
-        };
-    }
+//         return .{
+//             .origin = origin,
+//             .right = right,
+//             .forward = up,
+//             .width = width,
+//             .height = height,
+//         };
+//     }
 
-    pub fn draw(self: *Self, color: rl.Color) void {
-        const half_width = self.width / 2.0;
-        const half_height = self.height / 2.0;
+//     pub fn draw(self: *Self, color: rl.Color) void {
+//         const half_width = self.width / 2.0;
+//         const half_height = self.height / 2.0;
 
-        // Scaled axes
-        const right_scaled = rl.Vector3.scale(self.right, half_width);
-        const forward_scaled = rl.Vector3.scale(self.forward, half_height);
+//         // Scaled axes
+//         const right_scaled = rl.Vector3.scale(self.right, half_width);
+//         const forward_scaled = rl.Vector3.scale(self.forward, half_height);
 
-        // Corners of the plane
-        const top_left = rl.Vector3.subtract(rl.Vector3.subtract(self.origin, right_scaled), forward_scaled);
-        const top_right = rl.Vector3.add(rl.Vector3.subtract(self.origin, forward_scaled), right_scaled);
-        const bottom_right = rl.Vector3.add(rl.Vector3.add(self.origin, right_scaled), forward_scaled);
-        const bottom_left = rl.Vector3.subtract(rl.Vector3.add(self.origin, forward_scaled), right_scaled);
+//         // Corners of the plane
+//         const top_left = rl.Vector3.subtract(rl.Vector3.subtract(self.origin, right_scaled), forward_scaled);
+//         const top_right = rl.Vector3.add(rl.Vector3.subtract(self.origin, forward_scaled), right_scaled);
+//         const bottom_right = rl.Vector3.add(rl.Vector3.add(self.origin, right_scaled), forward_scaled);
+//         const bottom_left = rl.Vector3.subtract(rl.Vector3.add(self.origin, forward_scaled), right_scaled);
 
-        // Draw the quad
-        rl.drawLine3D(top_left, top_right, color);
-        rl.drawLine3D(top_left, bottom_left, color);
-        rl.drawLine3D(bottom_left, bottom_right, color);
-        rl.drawLine3D(bottom_right, top_right, color);
-    }
+//         // Draw the quad
+//         rl.drawLine3D(top_left, top_right, color);
+//         rl.drawLine3D(top_left, bottom_left, color);
+//         rl.drawLine3D(bottom_left, bottom_right, color);
+//         rl.drawLine3D(bottom_right, top_right, color);
+//     }
 
-    pub fn getRandomPosition(self: *Self) rl.Vector3 {
-        const rand_x = (@as(f32, @floatFromInt(rl.getRandomValue(-1000, 1000))) / 1000.0) * (self.width / 2.0);
-        const rand_z = (@as(f32, @floatFromInt(rl.getRandomValue(-1000, 1000))) / 1000.0) * (self.height / 2.0);
+//     pub fn getRandomPosition(self: *Self) rl.Vector3 {
+//         const rand_x = (@as(f32, @floatFromInt(rl.getRandomValue(-1000, 1000))) / 1000.0) * (self.width / 2.0);
+//         const rand_z = (@as(f32, @floatFromInt(rl.getRandomValue(-1000, 1000))) / 1000.0) * (self.height / 2.0);
 
-        const offset_right = rl.Vector3.scale(self.right, rand_x);
-        const offset_forward = rl.Vector3.scale(self.forward, rand_z);
+//         const offset_right = rl.Vector3.scale(self.right, rand_x);
+//         const offset_forward = rl.Vector3.scale(self.forward, rand_z);
 
-        const new_position = rl.Vector3.add(self.origin, rl.Vector3.add(offset_right, offset_forward));
+//         const new_position = rl.Vector3.add(self.origin, rl.Vector3.add(offset_right, offset_forward));
 
-        return new_position;
-    }
-};
+//         return new_position;
+//     }
+// };
 
-pub const SpawnPrism = struct {
+pub const Spawn = struct {
     origin: rl.Vector3,
     right: rl.Vector3, // local X-axis (width direction)
     up: rl.Vector3, // local Y-axis (height direction)
