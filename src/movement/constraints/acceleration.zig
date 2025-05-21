@@ -11,8 +11,7 @@ pub const PointBiasConstraint = struct {
         const self = @as(*PointBiasConstraint, @ptrCast(@alignCast(ctx)));
 
         const to_point = rl.Vector3.subtract(self.point, position);
-        const dir = rl.Vector3.normalize(to_point);
-        const bias = rl.Vector3.scale(dir, self.strength);
+        const bias = to_point.scale(self.strength);
 
         return rl.Vector3.add(accel, bias);
     }

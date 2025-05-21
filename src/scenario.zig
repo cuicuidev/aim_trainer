@@ -134,13 +134,13 @@ var noise_wander = mov.modifiers.noise.NoiseWanderModifier{
     .strength = 3.0,
 };
 
-// var min_speed = mov.constraints.velocity.MinSpeedConstraint{ .min_speed = 20.0 };
+var min_speed = mov.constraints.velocity.MinSpeedConstraint{ .min_speed = 12.0 };
 
-// var max_speed = mov.constraints.velocity.MaxSpeedConstraint{ .max_speed = 30.0 };
+var max_speed = mov.constraints.velocity.MaxSpeedConstraint{ .max_speed = 20.0 };
 
 var bias = mov.constraints.acceleration.PointBiasConstraint{
     .point = rl.Vector3.init(50.0, 2.0, 0.0),
-    .strength = 10.0,
+    .strength = 2.0,
 };
 
 const modifiers_arr = [2]mov.modifiers.MovementModule{
@@ -152,10 +152,10 @@ const modifiers = mov.modifiers.MovementModifiers{
     .modules = &modifiers_arr,
 };
 
-// const vel_constraints_arr = [2]mov.constraints.VelocityConstraintModule{
-//     min_speed.toModule(),
-//     max_speed.toModule(),
-// };
+const vel_constraints_arr = [2]mov.constraints.VelocityConstraintModule{
+    min_speed.toModule(),
+    max_speed.toModule(),
+};
 
 const acc_constraints_arr = [1]mov.constraints.AccelConstraintModule{
     bias.toModule(),
@@ -163,7 +163,7 @@ const acc_constraints_arr = [1]mov.constraints.AccelConstraintModule{
 
 const constraints = mov.constraints.Constraints{
     .accel_constraints = &acc_constraints_arr,
-    .velocity_constraints = null, //&vel_constraints_arr,
+    .velocity_constraints = &vel_constraints_arr,
 };
 
 const KINETIC_CONFIG = mov.kinetic.KineticConfig{
