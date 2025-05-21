@@ -77,9 +77,14 @@ pub fn RawControl(comptime distance: f32) type {
                 .spawn = spawn,
                 .bots = .{
                     bot.Bot.init(
-                        spawn.origin,
-                        geo.Geometry{ .sphere = geo.Sphere.init(RADIUS, COLOR) },
-                        KINETIC_CONFIG,
+                        geo.Geometry{
+                            .sphere = geo.Sphere.init(
+                                spawn.origin,
+                                RADIUS,
+                                COLOR,
+                                KINETIC_CONFIG,
+                            ),
+                        },
                     ),
                 },
                 .last_hit = null,
@@ -97,12 +102,6 @@ pub fn RawControl(comptime distance: f32) type {
         }
 
         pub fn kill(self: *Self, camera: *rl.Camera3D) void {
-            if (self.total_frames == 0) {
-                for (&self.bots) |*b| {
-                    b.syncMovGeo();
-                }
-            }
-
             for (&self.bots) |*b| {
                 const delta = rl.getFrameTime();
                 b.step(delta);

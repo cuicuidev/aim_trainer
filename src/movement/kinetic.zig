@@ -11,44 +11,31 @@ pub const KineticConfig = struct {
 };
 
 pub const KineticHandler = struct {
-    position: rl.Vector3,
     velocity: rl.Vector3,
     time: f32,
     config: KineticConfig,
 
     const Self = @This();
 
-    pub fn init(position: rl.Vector3, config: KineticConfig) Self {
+    pub fn init(config: KineticConfig) Self {
         return .{
-            .position = position,
             .velocity = rl.Vector3.init(0.0, 0.0, 0.0),
             .time = 0.0,
             .config = config,
         };
     }
 
-    // pub fn staticInstance() Self {}
-
-    // pub fn rawControlInstance(position: rl.Vector3) Self {
-    //     return .{
-    //         .position = position,
-    //         .velocity = rl.Vector3.init(0.0, 0.0, 0.0),
-    //         .time = 0.0,
-    //         .config = KINETIC_CONFIG,
-    //     };
-    // }
-
-    pub fn step(self: *Self, dt: f32) void {
+    pub fn step(self: *Self, position: rl.Vector3, dt: f32) rl.Vector3 {
         self.time += dt;
 
         const base_accel = self._getBaseAccel(dt);
-        const constrained_accel = self._applyAccelConstraints(base_accel);
+        const constrained_accel = self._applyAccelConstraints(position, base_accel);
 
         var new_velocity = rl.Vector3.add(self.velocity, rl.Vector3.scale(constrained_accel, dt));
         new_velocity = self._applyVelocityConstraints(new_velocity);
 
         self.velocity = new_velocity;
-        self.position = rl.Vector3.add(self.position, rl.Vector3.scale(self.velocity, dt));
+        return rl.Vector3.add(position, rl.Vector3.scale(self.velocity, dt));
     }
 
     fn _getBaseAccel(self: *Self, dt: f32) rl.Vector3 {
@@ -62,11 +49,11 @@ pub const KineticHandler = struct {
         return accel;
     }
 
-    fn _applyAccelConstraints(self: *Self, accel: rl.Vector3) rl.Vector3 {
+    fn _applyAccelConstraints(self: *Self, position: rl.Vector3, accel: rl.Vector3) rl.Vector3 {
         var adjusted = accel;
         if (self.config.constraints.accel_constraints) |accel_constraints| {
             for (accel_constraints) |con| {
-                adjusted = con.applyFn(con.ctx, adjusted, self.position, self.velocity);
+                adjusted = con.applyFn(con.ctx, adjusted, position, self.velocity);
             }
         }
         return adjusted;

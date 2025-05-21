@@ -2,6 +2,8 @@ const std = @import("std");
 
 const rl = @import("raylib");
 
+const mov = @import("movement/root.zig");
+
 pub fn rayIntersectsSphere(ray_origin: rl.Vector3, ray_dir_norm: rl.Vector3, sphere_position: rl.Vector3, sphere_radius: f32) ?rl.Vector3 {
     const L = rl.Vector3.subtract(ray_origin, sphere_position);
     const a = 1.0;
@@ -86,17 +88,20 @@ pub fn rayIntersectsCapsule(ray_origin: rl.Vector3, ray_dir: rl.Vector3, capsule
 }
 
 pub const Sphere = struct {
-    position_ptr: ?*rl.Vector3,
+    position: rl.Vector3,
     radius: f32,
     color: rl.Color,
+    kinetic_handler: mov.kinetic.KineticHandler,
 
     const Self = @This();
 
-    pub fn init(radius: f32, color: rl.Color) Self {
+    pub fn init(position: rl.Vector3, radius: f32, color: rl.Color, kinetic_config: mov.kinetic.KineticConfig) Self {
+        const kinetic_handler = mov.kinetic.KineticHandler.init(kinetic_config);
         return .{
-            .position_ptr = null,
+            .position = position,
             .radius = radius,
             .color = color,
+            .kinetic_handler = kinetic_handler,
         };
     }
 
@@ -106,39 +111,33 @@ pub const Sphere = struct {
         return rayIntersectsSphere(
             camera.position,
             ray_dir,
-            self.position_ptr.?.*,
+            self.position,
             self.radius,
         );
     }
 
     pub fn draw(self: *Self) void {
-        rl.drawSphere(self.position_ptr.?.*, self.radius, self.color);
-    }
-
-    pub fn setPosition(self: *Self, position_ptr: *rl.Vector3) void {
-        self.position_ptr = position_ptr;
-    }
-
-    pub fn update(self: *Self, radius: f32, color: rl.Color) void {
-        self.radius = radius;
-        self.color = color;
+        rl.drawSphere(self.position, self.radius, self.color);
     }
 };
 
 pub const Capsule = struct {
-    position_ptr: ?*rl.Vector3,
+    position: rl.Vector3,
     radius: f32,
     height: f32,
     color: rl.Color,
+    kinetic_handler: mov.kinetic.KineticHandler,
 
     const Self = @This();
 
-    pub fn init(radius: f32, height: f32, color: rl.Color) Self {
+    pub fn init(position: rl.Vector3, radius: f32, height: f32, color: rl.Color, kinetic_config: mov.kinetic.KineticConfig) Self {
+        const kinetic_handler = mov.kinetic.KineticHandler.init(kinetic_config);
         return .{
-            .position_ptr = null,
+            .position = position,
             .radius = radius,
             .height = height,
             .color = color,
+            .kinetic_handler = kinetic_handler,
         };
     }
 
@@ -148,7 +147,7 @@ pub const Capsule = struct {
         return rayIntersectsCapsule(
             camera.position,
             ray_dir,
-            self.position_ptr.?.*,
+            self.position,
             self.height,
             self.radius,
         );
@@ -156,19 +155,9 @@ pub const Capsule = struct {
 
     pub fn draw(self: *Self) void {
         const half_cylinder_height = (self.height - 2.0 * self.radius) / 2.0;
-        const start_pos = rl.Vector3.init(self.position_ptr.?.x, self.position_ptr.?.y - half_cylinder_height, self.position_ptr.?.z);
-        const end_pos = rl.Vector3.init(self.position_ptr.?.x, self.position_ptr.?.y + half_cylinder_height, self.position_ptr.?.z);
+        const start_pos = rl.Vector3.init(self.position.x, self.position.y - half_cylinder_height, self.position.z);
+        const end_pos = rl.Vector3.init(self.position.x, self.position.y + half_cylinder_height, self.position.z);
         rl.drawCapsule(start_pos, end_pos, self.radius, 16, 8, self.color);
-    }
-
-    pub fn setPosition(self: *Self, position_ptr: *rl.Vector3) void {
-        self.position_ptr = position_ptr;
-    }
-
-    pub fn update(self: *Self, radius: f32, height: f32, color: rl.Color) void {
-        self.radius = radius;
-        self.height = height;
-        self.color = color;
     }
 };
 
@@ -192,22 +181,13 @@ pub const Geometry = union(enum) {
         }
     }
 
-    pub fn setPosition(self: *Self, position_ptr: *rl.Vector3) void {
+    pub fn kineticHandlerStep(self: *Self, dt: f32) void {
         switch (self.*) {
-            .sphere => |*s| s.setPosition(position_ptr),
-            .capsule => |*c| c.setPosition(position_ptr),
-        }
-    }
-
-    pub fn update(self: *Self, radius: f32, color: rl.Color, height: ?f32) void {
-        switch (self.*) {
-            .sphere => |*s| s.update(radius, color),
+            .sphere => |*s| {
+                s.position = s.kinetic_handler.step(s.position, dt);
+            },
             .capsule => |*c| {
-                if (height) |h| {
-                    c.update(radius, h, color);
-                } else {
-                    @panic("Height cannot be null in a capsule geometry");
-                }
+                c.position = c.kinetic_handler.step(c.position, dt);
             },
         }
     }
