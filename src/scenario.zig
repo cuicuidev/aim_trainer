@@ -77,8 +77,9 @@ pub fn RawControl(comptime distance: f32) type {
                 .spawn = spawn,
                 .bots = .{
                     bot.Bot.init(
-                        geo.Geometry{ .sphere = geo.Sphere.init(spawn.origin, RADIUS, COLOR) },
-                        mov.kinetic.KineticHandler.rawControlInstance(spawn.origin),
+                        spawn.origin,
+                        geo.Geometry{ .sphere = geo.Sphere.init(RADIUS, COLOR) },
+                        KINETIC_CONFIG,
                     ),
                 },
                 .last_hit = null,
@@ -96,6 +97,12 @@ pub fn RawControl(comptime distance: f32) type {
         }
 
         pub fn kill(self: *Self, camera: *rl.Camera3D) void {
+            if (self.total_frames == 0) {
+                for (&self.bots) |*b| {
+                    b.syncMovGeo();
+                }
+            }
+
             for (&self.bots) |*b| {
                 const delta = rl.getFrameTime();
                 b.step(delta);
@@ -116,3 +123,50 @@ pub fn RawControl(comptime distance: f32) type {
         }
     };
 }
+
+// TODO: allocate wanderers dynamically instead of using global variables.
+var sin_wander = mov.modifiers.sinusoidal.SinusoidalWanderModifier{
+    .amplitude = 20.0,
+    .freq = 2.0,
+};
+
+var noise_wander = mov.modifiers.noise.NoiseWanderModifier{
+    .strength = 3.0,
+};
+
+// var min_speed = mov.constraints.velocity.MinSpeedConstraint{ .min_speed = 20.0 };
+
+// var max_speed = mov.constraints.velocity.MaxSpeedConstraint{ .max_speed = 30.0 };
+
+var bias = mov.constraints.acceleration.PointBiasConstraint{
+    .point = rl.Vector3.init(50.0, 2.0, 0.0),
+    .strength = 10.0,
+};
+
+const modifiers_arr = [2]mov.modifiers.MovementModule{
+    sin_wander.toModule(1.0),
+    noise_wander.toModule(1.0),
+};
+
+const modifiers = mov.modifiers.MovementModifiers{
+    .modules = &modifiers_arr,
+};
+
+// const vel_constraints_arr = [2]mov.constraints.VelocityConstraintModule{
+//     min_speed.toModule(),
+//     max_speed.toModule(),
+// };
+
+const acc_constraints_arr = [1]mov.constraints.AccelConstraintModule{
+    bias.toModule(),
+};
+
+const constraints = mov.constraints.Constraints{
+    .accel_constraints = &acc_constraints_arr,
+    .velocity_constraints = null, //&vel_constraints_arr,
+};
+
+const KINETIC_CONFIG = mov.kinetic.KineticConfig{
+    .constraints = constraints,
+    .modifiers = modifiers,
+};

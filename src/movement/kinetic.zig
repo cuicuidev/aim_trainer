@@ -18,10 +18,10 @@ pub const KineticHandler = struct {
 
     const Self = @This();
 
-    pub fn init(position: rl.Vector3, velocity: rl.Vector3, config: KineticConfig) Self {
+    pub fn init(position: rl.Vector3, config: KineticConfig) Self {
         return .{
             .position = position,
-            .velocity = velocity,
+            .velocity = rl.Vector3.init(0.0, 0.0, 0.0),
             .time = 0.0,
             .config = config,
         };
@@ -29,14 +29,14 @@ pub const KineticHandler = struct {
 
     // pub fn staticInstance() Self {}
 
-    pub fn rawControlInstance(position: rl.Vector3) Self {
-        return .{
-            .position = position,
-            .velocity = rl.Vector3.init(0.0, 0.0, 0.0),
-            .time = 0.0,
-            .config = KINETIC_CONFIG,
-        };
-    }
+    // pub fn rawControlInstance(position: rl.Vector3) Self {
+    //     return .{
+    //         .position = position,
+    //         .velocity = rl.Vector3.init(0.0, 0.0, 0.0),
+    //         .time = 0.0,
+    //         .config = KINETIC_CONFIG,
+    //     };
+    // }
 
     pub fn step(self: *Self, dt: f32) void {
         self.time += dt;
@@ -81,51 +81,4 @@ pub const KineticHandler = struct {
         }
         return adjusted;
     }
-};
-
-// TODO: allocate wanderers dynamically instead of using global variables.
-var sin_wander = m.sinusoidal.SinusoidalWanderModifier{
-    .amplitude = 20.0,
-    .freq = 2.0,
-};
-
-var noise_wander = m.noise.NoiseWanderModifier{
-    .strength = 3.0,
-};
-
-// var min_speed = vel.MinSpeedConstraint{ .min_speed = 20.0 };
-
-// var max_speed = vel.MaxSpeedConstraint{ .max_speed = 30.0 };
-
-var bias = c.acceleration.PointBiasConstraint{
-    .point = rl.Vector3.init(50.0, 2.0, 0.0),
-    .strength = 10.0,
-};
-
-const modifiers_arr = [2]m.MovementModule{
-    sin_wander.toModule(1.0),
-    noise_wander.toModule(1.0),
-};
-
-const modifiers = m.MovementModifiers{
-    .modules = &modifiers_arr,
-};
-
-// const vel_constraints_arr = [2]c.VelocityConstraintModule{
-//     min_speed.toModule(),
-//     max_speed.toModule(),
-// };
-
-const acc_constraints_arr = [1]c.AccelConstraintModule{
-    bias.toModule(),
-};
-
-const constraints = c.Constraints{
-    .accel_constraints = &acc_constraints_arr,
-    .velocity_constraints = null, //&vel_constraints_arr,
-};
-
-const KINETIC_CONFIG = KineticConfig{
-    .constraints = constraints,
-    .modifiers = modifiers,
 };

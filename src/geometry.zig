@@ -86,15 +86,15 @@ pub fn rayIntersectsCapsule(ray_origin: rl.Vector3, ray_dir: rl.Vector3, capsule
 }
 
 pub const Sphere = struct {
-    position: rl.Vector3,
+    position_ptr: ?*rl.Vector3,
     radius: f32,
     color: rl.Color,
 
     const Self = @This();
 
-    pub fn init(position: rl.Vector3, radius: f32, color: rl.Color) Self {
+    pub fn init(radius: f32, color: rl.Color) Self {
         return .{
-            .position = position,
+            .position_ptr = null,
             .radius = radius,
             .color = color,
         };
@@ -106,33 +106,36 @@ pub const Sphere = struct {
         return rayIntersectsSphere(
             camera.position,
             ray_dir,
-            self.position,
+            self.position_ptr.?.*,
             self.radius,
         );
     }
 
     pub fn draw(self: *Self) void {
-        rl.drawSphere(self.position, self.radius, self.color);
+        rl.drawSphere(self.position_ptr.?.*, self.radius, self.color);
     }
 
-    pub fn update(self: *Self, position: rl.Vector3, radius: f32, color: rl.Color) void {
-        self.position = position;
+    pub fn setPosition(self: *Self, position_ptr: *rl.Vector3) void {
+        self.position_ptr = position_ptr;
+    }
+
+    pub fn update(self: *Self, radius: f32, color: rl.Color) void {
         self.radius = radius;
         self.color = color;
     }
 };
 
 pub const Capsule = struct {
-    position: rl.Vector3,
+    position_ptr: ?*rl.Vector3,
     radius: f32,
     height: f32,
     color: rl.Color,
 
     const Self = @This();
 
-    pub fn init(position: rl.Vector3, radius: f32, height: f32, color: rl.Color) Self {
+    pub fn init(radius: f32, height: f32, color: rl.Color) Self {
         return .{
-            .position = position,
+            .position_ptr = null,
             .radius = radius,
             .height = height,
             .color = color,
@@ -145,7 +148,7 @@ pub const Capsule = struct {
         return rayIntersectsCapsule(
             camera.position,
             ray_dir,
-            self.position,
+            self.position_ptr.?.*,
             self.height,
             self.radius,
         );
@@ -153,13 +156,16 @@ pub const Capsule = struct {
 
     pub fn draw(self: *Self) void {
         const half_cylinder_height = (self.height - 2.0 * self.radius) / 2.0;
-        const start_pos = rl.Vector3.init(self.position.x, self.position.y - half_cylinder_height, self.position.z);
-        const end_pos = rl.Vector3.init(self.position.x, self.position.y + half_cylinder_height, self.position.z);
+        const start_pos = rl.Vector3.init(self.position_ptr.?.x, self.position_ptr.?.y - half_cylinder_height, self.position_ptr.?.z);
+        const end_pos = rl.Vector3.init(self.position_ptr.?.x, self.position_ptr.?.y + half_cylinder_height, self.position_ptr.?.z);
         rl.drawCapsule(start_pos, end_pos, self.radius, 16, 8, self.color);
     }
 
-    pub fn update(self: *Self, position: rl.Vector3, radius: f32, height: f32, color: rl.Color) void {
-        self.position = position;
+    pub fn setPosition(self: *Self, position_ptr: *rl.Vector3) void {
+        self.position_ptr = position_ptr;
+    }
+
+    pub fn update(self: *Self, radius: f32, height: f32, color: rl.Color) void {
         self.radius = radius;
         self.height = height;
         self.color = color;
@@ -186,12 +192,19 @@ pub const Geometry = union(enum) {
         }
     }
 
-    pub fn update(self: *Self, position: rl.Vector3, radius: f32, color: rl.Color, height: ?f32) void {
+    pub fn setPosition(self: *Self, position_ptr: *rl.Vector3) void {
         switch (self.*) {
-            .sphere => |*s| s.update(position, radius, color),
+            .sphere => |*s| s.setPosition(position_ptr),
+            .capsule => |*c| c.setPosition(position_ptr),
+        }
+    }
+
+    pub fn update(self: *Self, radius: f32, color: rl.Color, height: ?f32) void {
+        switch (self.*) {
+            .sphere => |*s| s.update(radius, color),
             .capsule => |*c| {
                 if (height) |h| {
-                    c.update(position, radius, h, color);
+                    c.update(radius, h, color);
                 } else {
                     @panic("Height cannot be null in a capsule geometry");
                 }
