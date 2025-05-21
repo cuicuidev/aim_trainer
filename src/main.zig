@@ -2,7 +2,7 @@ const std = @import("std");
 
 const rl = @import("raylib");
 
-const scen = @import("scenario.zig");
+const scen = @import("scen/root.zig");
 
 pub fn main() anyerror!void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
