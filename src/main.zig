@@ -5,6 +5,12 @@ const rl = @import("raylib");
 const scen = @import("scen/root.zig");
 const bot = @import("bot/root.zig");
 
+pub const GameState = enum {
+    menu,
+    scenario,
+    exit,
+};
+
 const Sensitivity = struct {
     base_cpi: f32 = 1600.0,
     cm360_to_sens_ratio: f32 = 0.6,
@@ -43,6 +49,8 @@ const Sensitivity = struct {
 };
 
 pub fn main() anyerror!void {
+    var STATE = GameState.menu;
+
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
 
@@ -54,6 +62,7 @@ pub fn main() anyerror!void {
 
     const config_flags = rl.ConfigFlags{
         .fullscreen_mode = true,
+        .window_unfocused = false,
         .msaa_4x_hint = true,
     };
 
@@ -62,7 +71,7 @@ pub fn main() anyerror!void {
     rl.initWindow(screen_width, screen_height, "Aimalytics");
     defer rl.closeWindow();
 
-    rl.disableCursor();
+    rl.setExitKey(rl.KeyboardKey.null);
 
     var camera = rl.Camera3D{
         .position = rl.Vector3.init(0.0, 2.0, 0.0),
@@ -108,56 +117,106 @@ pub fn main() anyerror!void {
 
     // Main game loop
     while (!rl.windowShouldClose()) {
-        // ---------------------------------------------------------------------------------------
-        // UPDATE --------------------------------------------------------------------------------
-        // ---------------------------------------------------------------------------------------
+        switch (STATE) {
+            .menu => {
+                if (rl.isCursorHidden()) {
+                    rl.enableCursor();
+                }
+                rl.beginDrawing();
+                defer rl.endDrawing();
+                rl.clearBackground(rl.Color.dark_gray);
 
-        // Sens adjustment
-        if (rl.isKeyPressed(rl.KeyboardKey.page_up)) {
-            sensitivity.setCM360(sensitivity.cm360 + 1.0);
+                rl.drawText("Aimalytics", screen_width / 2, screen_height / 4, 20, rl.Color.black);
+
+                const play_clicking_btn = rl.Rectangle.init(screen_width / 2, screen_height / 2, 100, 50);
+                const play_tracking_btn = rl.Rectangle.init(screen_width / 2, screen_height - screen_height / 4, 100, 50);
+
+                const mouse_pos = rl.getMousePosition();
+
+                if (rl.checkCollisionPointRec(mouse_pos, play_clicking_btn)) {
+                    rl.drawRectangleRec(play_clicking_btn, rl.Color.white);
+                    if (rl.isMouseButtonPressed(rl.MouseButton.left)) {
+                        STATE = GameState.scenario;
+                    }
+                } else {
+                    rl.drawRectangleRec(play_clicking_btn, rl.Color.black);
+                }
+
+                if (rl.checkCollisionPointRec(mouse_pos, play_tracking_btn)) {
+                    rl.drawRectangleRec(play_tracking_btn, rl.Color.white);
+
+                    if (rl.isMouseButtonPressed(rl.MouseButton.left)) {
+                        STATE = GameState.scenario;
+                    }
+                } else {
+                    rl.drawRectangleRec(play_tracking_btn, rl.Color.black);
+                }
+
+                if (rl.isKeyPressed(rl.KeyboardKey.escape)) {
+                    STATE = GameState.exit;
+                }
+            },
+            .scenario => {
+                if (!rl.isCursorHidden()) {
+                    rl.disableCursor();
+                }
+
+                if (rl.isKeyPressed(rl.KeyboardKey.escape)) {
+                    STATE = GameState.menu;
+                }
+                // ---------------------------------------------------------------------------------------
+                // UPDATE --------------------------------------------------------------------------------
+                // ---------------------------------------------------------------------------------------
+
+                // Sens adjustment
+                if (rl.isKeyPressed(rl.KeyboardKey.page_up)) {
+                    sensitivity.setCM360(sensitivity.cm360 + 1.0);
+                }
+                if (rl.isKeyPressed(rl.KeyboardKey.page_down)) {
+                    sensitivity.setCM360(sensitivity.cm360 - 1.0);
+                }
+                const cm360_str = try sensitivity.allocPrintCM360(allocator);
+                defer allocator.free(cm360_str);
+
+                // Camera update
+                const mouse_delta = rl.getMouseDelta();
+                const rotation = rl.Vector3.init(
+                    mouse_delta.x * sensitivity.value, // pitch (up/down)
+                    mouse_delta.y * sensitivity.value, // yaw (left/right)
+                    0.0, // roll
+                );
+                const movement = rl.Vector3.init(0.0, 0.0, 0.0);
+                rl.updateCameraPro(&camera, movement, rotation, 0.0);
+
+                // Scenario events
+                scenario.kill(&camera);
+                const score = try std.fmt.allocPrintZ(allocator, "Score {d:2.2}", .{scenario.getScore()});
+                defer allocator.free(score);
+
+                // -----------------------------------------------------------------------------------------
+                // RENDER ----------------------------------------------------------------------------------
+                // -----------------------------------------------------------------------------------------
+
+                rl.beginDrawing();
+                defer rl.endDrawing();
+                rl.clearBackground(rl.Color.dark_gray);
+
+                // 3D RENDER -------------------------------------------------------------------------------
+                {
+                    rl.beginMode3D(camera);
+                    defer rl.endMode3D();
+
+                    scenario.draw();
+                }
+
+                // 2D RENDER -------------------------------------------------------------------------------
+                rl.drawFPS(screen_width - 200, 40);
+                rl.drawText(cm360_str, screen_width - 200, 10, 20, rl.Color.dark_green);
+                rl.drawText(score, screen_width - 300, 100, 20, rl.Color.dark_green);
+                rl.drawCircle(screen_width / 2, screen_height / 2, 3.0, rl.Color.black);
+            },
+            .exit => rl.closeWindow(),
         }
-        if (rl.isKeyPressed(rl.KeyboardKey.page_down)) {
-            sensitivity.setCM360(sensitivity.cm360 - 1.0);
-        }
-        const cm360_str = try sensitivity.allocPrintCM360(allocator);
-        defer allocator.free(cm360_str);
-
-        // Camera update
-        const mouse_delta = rl.getMouseDelta();
-        const rotation = rl.Vector3.init(
-            mouse_delta.x * sensitivity.value, // pitch (up/down)
-            mouse_delta.y * sensitivity.value, // yaw (left/right)
-            0.0, // roll
-        );
-        const movement = rl.Vector3.init(0.0, 0.0, 0.0);
-        rl.updateCameraPro(&camera, movement, rotation, 0.0);
-
-        // Scenario events
-        scenario.kill(&camera);
-        const score = try std.fmt.allocPrintZ(allocator, "Score {d:2.2}", .{scenario.getScore()});
-        defer allocator.free(score);
-
-        // -----------------------------------------------------------------------------------------
-        // RENDER ----------------------------------------------------------------------------------
-        // -----------------------------------------------------------------------------------------
-
-        rl.beginDrawing();
-        defer rl.endDrawing();
-        rl.clearBackground(rl.Color.dark_gray);
-
-        // 3D RENDER -------------------------------------------------------------------------------
-        {
-            rl.beginMode3D(camera);
-            defer rl.endMode3D();
-
-            scenario.draw();
-        }
-
-        // 2D RENDER -------------------------------------------------------------------------------
-        rl.drawFPS(screen_width - 200, 40);
-        rl.drawText(cm360_str, screen_width - 200, 10, 20, rl.Color.dark_green);
-        rl.drawText(score, screen_width - 300, 100, 20, rl.Color.dark_green);
-        rl.drawCircle(screen_width - screen_width / 2, screen_height - screen_height / 2, 3.0, rl.Color.black);
     }
 }
 
