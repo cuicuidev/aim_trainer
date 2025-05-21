@@ -4,6 +4,12 @@ const rl = @import("raylib");
 const geo = @import("geometry/root.zig");
 const mov = @import("movement/root.zig");
 
+pub const BotConfig = struct {
+    n_bots: usize,
+    geometry: geo.Geometry,
+    bot_initial_position: ?rl.Vector3 = null,
+};
+
 pub const Bot = struct {
     geometry: geo.Geometry,
 

@@ -84,26 +84,27 @@ pub fn main() anyerror!void {
         10.0,
     );
 
-    const bot_config = scen.BotConfig{
+    const bot_config = bot.BotConfig{
         .n_bots = 3,
         .bot_initial_position = null,
         .geometry = bot.Geometry{
             .sphere = bot.geo.Sphere.init(
                 spawn.origin,
-                0.3,
+                1.0,
                 rl.Color.red,
-                STATIC_CONFIG,
+                KINETIC_CONFIG,
             ),
         },
     };
 
-    var scenario = scen.Scenario{
-        .clicking = scen.Clicking.init(
-            allocator,
-            spawn,
-            bot_config,
-        ) catch unreachable,
-    };
+    var scenario = try scen.Scenario.init(
+        allocator,
+        spawn,
+        bot_config,
+        scen.ScenarioType{
+            .tracking = scen.Tracking{},
+        },
+    );
 
     // Main game loop
     while (!rl.windowShouldClose()) {
@@ -168,4 +169,51 @@ const STATIC_CONFIG = bot.mov.kinetic.KineticConfig{
     .modifiers = bot.mov.modifiers.MovementModifiers{
         .modules = null,
     },
+};
+
+// TODO: allocate wanderers dynamically instead of using global variables.
+var sin_wander = bot.mov.modifiers.sinusoidal.SinusoidalWanderModifier{
+    .amplitude = 20.0,
+    .freq = 2.0,
+};
+
+var noise_wander = bot.mov.modifiers.noise.NoiseWanderModifier{
+    .strength = 3.0,
+};
+
+var min_speed = bot.mov.constraints.velocity.MinSpeedConstraint{ .min_speed = 12.0 };
+
+var max_speed = bot.mov.constraints.velocity.MaxSpeedConstraint{ .max_speed = 20.0 };
+
+var bias = bot.mov.constraints.acceleration.PointBiasConstraint{
+    .point = rl.Vector3.init(50.0, 2.0, 0.0),
+    .strength = 2.0,
+};
+
+const modifiers_arr = [2]bot.mov.modifiers.MovementModule{
+    sin_wander.toModule(1.0),
+    noise_wander.toModule(1.0),
+};
+
+const modifiers = bot.mov.modifiers.MovementModifiers{
+    .modules = &modifiers_arr,
+};
+
+const vel_constraints_arr = [2]bot.mov.constraints.VelocityConstraintModule{
+    min_speed.toModule(),
+    max_speed.toModule(),
+};
+
+const acc_constraints_arr = [1]bot.mov.constraints.AccelConstraintModule{
+    bias.toModule(),
+};
+
+const constraints = bot.mov.constraints.Constraints{
+    .accel_constraints = &acc_constraints_arr,
+    .velocity_constraints = &vel_constraints_arr,
+};
+
+const KINETIC_CONFIG = bot.mov.kinetic.KineticConfig{
+    .constraints = constraints,
+    .modifiers = modifiers,
 };
