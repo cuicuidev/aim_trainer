@@ -69,7 +69,7 @@ pub fn main() anyerror!void {
     rl.setConfigFlags(config_flags);
 
     rl.initWindow(screen_width, screen_height, "Aimalytics");
-    defer rl.closeWindow();
+    errdefer rl.closeWindow();
 
     rl.setExitKey(rl.KeyboardKey.null);
 
@@ -93,27 +93,10 @@ pub fn main() anyerror!void {
         10.0,
     );
 
-    const bot_config = bot.BotConfig{
-        .n_bots = 3,
-        .bot_initial_position = null,
-        .geometry = bot.Geometry{
-            .sphere = bot.geo.Sphere.init(
-                spawn.origin,
-                1.0,
-                rl.Color.red,
-                KINETIC_CONFIG,
-            ),
-        },
-    };
+    var bot_config: bot.BotConfig = undefined;
 
-    var scenario = try scen.Scenario.init(
-        allocator,
-        spawn,
-        bot_config,
-        scen.ScenarioType{
-            .tracking = scen.Tracking{},
-        },
-    );
+    var scenario: scen.Scenario = undefined;
+    errdefer scenario.deinit();
 
     // Main game loop
     while (!rl.windowShouldClose()) {
@@ -122,6 +105,7 @@ pub fn main() anyerror!void {
                 if (rl.isCursorHidden()) {
                     rl.enableCursor();
                 }
+
                 rl.beginDrawing();
                 defer rl.endDrawing();
                 rl.clearBackground(rl.Color.dark_gray);
@@ -137,6 +121,27 @@ pub fn main() anyerror!void {
                     rl.drawRectangleRec(play_clicking_btn, rl.Color.white);
                     if (rl.isMouseButtonPressed(rl.MouseButton.left)) {
                         STATE = GameState.scenario;
+                        bot_config = bot.BotConfig{
+                            .n_bots = 3,
+                            .bot_initial_position = null,
+                            .geometry = bot.Geometry{
+                                .sphere = bot.geo.Sphere.init(
+                                    spawn.origin,
+                                    1.0,
+                                    rl.Color.red,
+                                    STATIC_CONFIG,
+                                ),
+                            },
+                        };
+
+                        scenario = try scen.Scenario.init(
+                            allocator,
+                            spawn,
+                            bot_config,
+                            scen.ScenarioType{
+                                .clicking = scen.Clicking{},
+                            },
+                        );
                     }
                 } else {
                     rl.drawRectangleRec(play_clicking_btn, rl.Color.black);
@@ -147,6 +152,29 @@ pub fn main() anyerror!void {
 
                     if (rl.isMouseButtonPressed(rl.MouseButton.left)) {
                         STATE = GameState.scenario;
+                        STATE = GameState.scenario;
+                        bot_config = bot.BotConfig{
+                            .n_bots = 1,
+                            .bot_initial_position = spawn.origin,
+                            .geometry = bot.Geometry{
+                                .capsule = bot.geo.Capsule.init(
+                                    spawn.origin,
+                                    1.0,
+                                    3.0,
+                                    rl.Color.red,
+                                    KINETIC_CONFIG,
+                                ),
+                            },
+                        };
+
+                        scenario = try scen.Scenario.init(
+                            allocator,
+                            spawn,
+                            bot_config,
+                            scen.ScenarioType{
+                                .tracking = scen.Tracking{},
+                            },
+                        );
                     }
                 } else {
                     rl.drawRectangleRec(play_tracking_btn, rl.Color.black);
@@ -154,6 +182,7 @@ pub fn main() anyerror!void {
 
                 if (rl.isKeyPressed(rl.KeyboardKey.escape)) {
                     STATE = GameState.exit;
+                    continue;
                 }
             },
             .scenario => {
@@ -161,9 +190,6 @@ pub fn main() anyerror!void {
                     rl.disableCursor();
                 }
 
-                if (rl.isKeyPressed(rl.KeyboardKey.escape)) {
-                    STATE = GameState.menu;
-                }
                 // ---------------------------------------------------------------------------------------
                 // UPDATE --------------------------------------------------------------------------------
                 // ---------------------------------------------------------------------------------------
@@ -214,6 +240,12 @@ pub fn main() anyerror!void {
                 rl.drawText(cm360_str, screen_width - 200, 10, 20, rl.Color.dark_green);
                 rl.drawText(score, screen_width - 300, 100, 20, rl.Color.dark_green);
                 rl.drawCircle(screen_width / 2, screen_height / 2, 3.0, rl.Color.black);
+
+                if (rl.isKeyPressed(rl.KeyboardKey.escape)) {
+                    STATE = GameState.menu;
+                    scenario.deinit();
+                    std.time.sleep(100_000_000);
+                }
             },
             .exit => rl.closeWindow(),
         }
