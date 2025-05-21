@@ -1,6 +1,6 @@
 const rl = @import("raylib");
 
-const m = @import("movement.zig");
+const m = @import("modifiers.zig");
 
 pub const NoiseWanderModifier = struct {
     strength: f32,

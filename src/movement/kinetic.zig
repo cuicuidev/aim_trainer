@@ -2,13 +2,8 @@ const std = @import("std");
 
 const rl = @import("raylib");
 
-const c = @import("constraints.zig");
-const m = @import("movement.zig");
-
-const sin = @import("sinusoidal.zig");
-const noise = @import("noise.zig");
-const vel = @import("velocity.zig");
-const acc = @import("acceleration.zig");
+const c = @import("constraints/root.zig");
+const m = @import("modifiers/root.zig");
 
 pub const KineticConfig = struct {
     constraints: c.Constraints,
@@ -89,12 +84,12 @@ pub const KineticHandler = struct {
 };
 
 // TODO: allocate wanderers dynamically instead of using global variables.
-var sin_wander = sin.SinusoidalWanderModifier{
+var sin_wander = m.sinusoidal.SinusoidalWanderModifier{
     .amplitude = 20.0,
     .freq = 2.0,
 };
 
-var noise_wander = noise.NoiseWanderModifier{
+var noise_wander = m.noise.NoiseWanderModifier{
     .strength = 3.0,
 };
 
@@ -102,7 +97,7 @@ var noise_wander = noise.NoiseWanderModifier{
 
 // var max_speed = vel.MaxSpeedConstraint{ .max_speed = 30.0 };
 
-var bias = acc.PointBiasConstraint{
+var bias = c.acceleration.PointBiasConstraint{
     .point = rl.Vector3.init(50.0, 2.0, 0.0),
     .strength = 10.0,
 };
