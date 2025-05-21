@@ -8,54 +8,95 @@ const geo = @import("geometry.zig");
 
 const mov = @import("movement/root.zig");
 
-// pub fn OneWallThreeTargetsSmall(comptime distance: f32) type {
-//     const RADIUS = 0.3;
-//     const HEIGHT = null;
-//     const COLOR = rl.Color.red;
+pub fn OneWallThreeTargetsSmall(comptime distance: f32) type {
+    const RADIUS = 0.3;
+    const COLOR = rl.Color.red;
 
-//     return struct {
-//         spawn: sp.SpawnPlane,
-//         bots: [3]bot.Bot,
-//         last_hit: ?rl.Vector3,
+    return struct {
+        spawn: sp.Spawn,
+        bots: [3]bot.Bot,
+        last_hit: ?rl.Vector3,
+        n_clicks: usize,
+        n_hits: usize,
 
-//         const Self = @This();
+        const Self = @This();
 
-//         pub fn init(camera: *rl.Camera3D) Self {
-//             var spawn = sp.SpawnPlane.init(camera, distance, 60.0, 30.0);
-//             return .{
-//                 .spawn = spawn,
-//                 .bots = .{
-//                     bot.Bot.init(geo.Geometry{ .sphere = geo.Sphere.init(spawn.getRandomPosition(), RADIUS, COLOR) }),
-//                     bot.Bot.init(geo.Geometry{ .sphere = geo.Sphere.init(spawn.getRandomPosition(), RADIUS, COLOR) }),
-//                     bot.Bot.init(geo.Geometry{ .sphere = geo.Sphere.init(spawn.getRandomPosition(), RADIUS, COLOR) }),
-//                 },
-//                 .last_hit = null,
-//             };
-//         }
+        pub fn init(camera: *rl.Camera3D) Self {
+            var spawn = sp.Spawn.init(camera, distance, 60.0, 30.0, 0.01);
+            return .{
+                .spawn = spawn,
+                .bots = .{
+                    bot.Bot.init(geo.Geometry{ .sphere = geo.Sphere.init(
+                        spawn.getRandomPosition(),
+                        RADIUS,
+                        COLOR,
+                        STATIC_CONFIG,
+                    ) }),
+                    bot.Bot.init(geo.Geometry{ .sphere = geo.Sphere.init(
+                        spawn.getRandomPosition(),
+                        RADIUS,
+                        COLOR,
+                        STATIC_CONFIG,
+                    ) }),
+                    bot.Bot.init(geo.Geometry{ .sphere = geo.Sphere.init(
+                        spawn.getRandomPosition(),
+                        RADIUS,
+                        COLOR,
+                        STATIC_CONFIG,
+                    ) }),
+                },
+                .last_hit = null,
+                .n_clicks = 0,
+                .n_hits = 0,
+            };
+        }
 
-//         pub fn draw(self: *Self) void {
-//             self.spawn.draw(rl.Color.green);
+        pub fn draw(self: *Self) void {
+            self.spawn.draw(rl.Color.green);
 
-//             for (&self.bots) |*b| {
-//                 b.draw();
-//             }
-//         }
+            for (&self.bots) |*b| {
+                b.draw();
+            }
+        }
 
-//         pub fn kill(self: *Self, camera: *rl.Camera3D) void {
-//             if (rl.isMouseButtonPressed(rl.MouseButton.left)) {
-//                 var i: usize = 0;
+        pub fn kill(self: *Self, camera: *rl.Camera3D) void {
+            for (&self.bots) |*b| {
+                const delta = rl.getFrameTime();
+                b.step(delta);
+            }
+            if (rl.isMouseButtonPressed(rl.MouseButton.left)) {
+                var i: usize = 0;
 
-//                 while (i < self.bots.len) : (i += 1) {
-//                     if (self.bots[i].hitScan(camera)) |hit_vec| {
-//                         self.bots[i].update(self.spawn.getRandomPosition(), RADIUS, COLOR, HEIGHT);
-//                         self.last_hit = hit_vec;
-//                         std.debug.print("V(x={d:2.2}, y={d:2.2}, z={d:2.2})\n", .{ hit_vec.x, hit_vec.y, hit_vec.z });
-//                     }
-//                 }
-//             }
-//         }
-//     };
-// }
+                while (i < self.bots.len) : (i += 1) {
+                    if (self.bots[i].hitScan(camera)) |hit_vec| {
+                        const new_bot = bot.Bot.init(geo.Geometry{ .sphere = geo.Sphere.init(
+                            self.spawn.getRandomPosition(),
+                            RADIUS,
+                            COLOR,
+                            STATIC_CONFIG,
+                        ) });
+
+                        self.bots[i] = new_bot;
+                        self.last_hit = hit_vec;
+                        self.n_hits += 1;
+                        std.debug.print("Hits: {} | Clicks {}\n", .{ self.n_hits, self.n_clicks });
+                        break;
+                    }
+                }
+
+                self.n_clicks += 1;
+            }
+        }
+
+        pub fn getScore(self: *Self) f64 {
+            if (self.n_clicks == 0) {
+                return 0.0;
+            }
+            const score = @as(f64, @floatFromInt(self.n_hits)) / @as(f64, @floatFromInt(self.n_clicks));
+            return score;
+        }
+    };
+}
 
 pub fn RawControl(comptime distance: f32) type {
     const RADIUS = 1.0;
@@ -66,8 +107,8 @@ pub fn RawControl(comptime distance: f32) type {
         spawn: sp.Spawn,
         bots: [1]bot.Bot,
         last_hit: ?rl.Vector3,
-        hit_frames: f64,
-        total_frames: f64,
+        hit_frames: usize,
+        total_frames: usize,
 
         const Self = @This();
 
@@ -113,12 +154,20 @@ pub fn RawControl(comptime distance: f32) type {
                     if (self.bots[i].hitScan(camera)) |hit_vec| {
                         // self.bots[i].update(self.spawn.getRandomPosition(), RADIUS, COLOR, HEIGHT);
                         self.last_hit = hit_vec;
-                        self.hit_frames += 1.0;
+                        self.hit_frames += 1;
                         // std.debug.print("V(x={d:2.2}, y={d:2.2}, z={d:2.2})\n", .{ hit_vec.x, hit_vec.y, hit_vec.z });
                     }
                 }
             }
-            self.total_frames += 1.0;
+            self.total_frames += 1;
+        }
+
+        pub fn getScore(self: *Self) f64 {
+            if (self.total_frames == 0) {
+                return 0.0;
+            }
+            const score = @as(f64, @floatFromInt(self.hit_frames)) / @as(f64, @floatFromInt(self.total_frames));
+            return score;
         }
     };
 }
@@ -168,4 +217,9 @@ const constraints = mov.constraints.Constraints{
 const KINETIC_CONFIG = mov.kinetic.KineticConfig{
     .constraints = constraints,
     .modifiers = modifiers,
+};
+
+const STATIC_CONFIG = mov.kinetic.KineticConfig{
+    .constraints = mov.constraints.Constraints{ .accel_constraints = null, .velocity_constraints = null },
+    .modifiers = mov.modifiers.MovementModifiers{ .modules = null },
 };

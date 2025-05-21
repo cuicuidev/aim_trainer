@@ -41,7 +41,7 @@ pub fn main() anyerror!void {
     var sensitivity: f32 = 0.008; // adjust this to change sensitivity
 
     // Scenario
-    var scenario = scen.RawControl(50.0).init(&camera);
+    var scenario = scen.OneWallThreeTargetsSmall(50.0).init(&camera);
 
     // Main game loop
     while (!rl.windowShouldClose()) {
@@ -101,12 +101,10 @@ pub fn main() anyerror!void {
             rl.drawText(last_hit_text, screen_width - 300, 70, 20, rl.Color.dark_green);
         }
 
-        if (scenario.total_frames != 0.0) {
-            const score = try std.fmt.allocPrintZ(allocator, "Score {d:2.2}", .{scenario.hit_frames / scenario.total_frames});
-            defer allocator.free(score);
+        const score = try std.fmt.allocPrintZ(allocator, "Score {d:2.2}", .{scenario.getScore()});
+        defer allocator.free(score);
 
-            rl.drawText(score, screen_width - 300, 100, 20, rl.Color.dark_green);
-        }
+        rl.drawText(score, screen_width - 300, 100, 20, rl.Color.dark_green);
         rl.drawCircle(screen_width - screen_width / 2, screen_height - screen_height / 2, 3.0, rl.Color.black);
         //----------------------------------------------------------------------------------
     }
