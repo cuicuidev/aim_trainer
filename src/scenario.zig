@@ -2,11 +2,11 @@ const std = @import("std");
 
 const rl = @import("raylib");
 
-const bot = @import("bot.zig");
 const sp = @import("spawn.zig");
-const geo = @import("geometry/root.zig");
 
-const mov = @import("movement/root.zig");
+const bot = @import("bot/root.zig");
+const geo = bot.geo;
+const mov = bot.mov;
 
 pub fn OneWallThreeTargetsSmall(comptime distance: f32) type {
     const RADIUS = 0.3;

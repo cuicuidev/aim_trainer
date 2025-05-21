@@ -2,7 +2,7 @@ const std = @import("std");
 
 const rl = @import("raylib");
 
-const bot = @import("bot.zig");
+const bot = @import("bot/root.zig");
 
 pub const Spawn = struct {
     origin: rl.Vector3,
