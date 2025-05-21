@@ -15,26 +15,23 @@ pub const Spawn = struct {
 
     const Self = @This();
 
-    pub fn init(camera: *rl.Camera3D, distance: f32, width: f32, height: f32, depth: f32) Self {
-        const forward = rl.Vector3.normalize(rl.Vector3.subtract(camera.target, camera.position));
-        const right = rl.Vector3.normalize(rl.Vector3.crossProduct(forward, camera.up));
-        const up = rl.Vector3.normalize(camera.up);
-
-        // Place the prism in front of the camera
-        const origin = rl.Vector3.add(camera.position, rl.Vector3.scale(forward, distance));
+    pub fn init(origin: rl.Vector3, forward: rl.Vector3, right: rl.Vector3, up: rl.Vector3, width: f32, height: f32, depth: f32) Self {
+        const forward_norm = rl.Vector3.normalize(forward);
+        const right_norm = rl.Vector3.normalize(right);
+        const up_norm = rl.Vector3.normalize(up);
 
         return .{
             .origin = origin,
-            .right = right,
-            .up = up,
-            .forward = forward,
+            .right = right_norm,
+            .up = up_norm,
+            .forward = forward_norm,
             .width = width,
             .height = height,
             .depth = depth,
         };
     }
 
-    pub fn draw(self: *Self, color: rl.Color) void {
+    pub fn draw(self: *const Self, color: rl.Color) void {
         const hw = self.width / 2.0;
         const hh = self.height / 2.0;
         const hd = self.depth / 2.0;
@@ -70,7 +67,7 @@ pub const Spawn = struct {
         }
     }
 
-    pub fn getRandomPosition(self: *Self) rl.Vector3 {
+    pub fn getRandomPosition(self: *const Self) rl.Vector3 {
         const rand_x = (@as(f32, @floatFromInt(rl.getRandomValue(-1000, 1000))) / 1000.0) * (self.width / 2.0);
         const rand_y = (@as(f32, @floatFromInt(rl.getRandomValue(-1000, 1000))) / 1000.0) * (self.height / 2.0);
         const rand_z = (@as(f32, @floatFromInt(rl.getRandomValue(-1000, 1000))) / 1000.0) * (self.depth / 2.0);

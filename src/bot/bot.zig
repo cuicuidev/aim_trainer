@@ -26,4 +26,8 @@ pub const Bot = struct {
     pub fn step(self: *Self, dt: f32) void {
         self.geometry.kineticHandlerStep(dt);
     }
+
+    pub fn setPosition(self: *Self, position: rl.Vector3) void {
+        self.geometry.setPosition(position);
+    }
 };

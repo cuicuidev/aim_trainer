@@ -37,4 +37,15 @@ pub const Geometry = union(enum) {
             },
         }
     }
+
+    pub fn setPosition(self: *Self, position: rl.Vector3) void {
+        switch (self.*) {
+            .sphere => |*s| {
+                s.position = position;
+            },
+            .capsule => |*c| {
+                c.position = position;
+            },
+        }
+    }
 };
