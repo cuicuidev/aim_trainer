@@ -1,7 +1,7 @@
 const std = @import("std");
 const rl = @import("raylib");
 
-const geo = @import("geometry.zig");
+const geo = @import("geometry/root.zig");
 const mov = @import("movement/root.zig");
 
 pub const Bot = struct {

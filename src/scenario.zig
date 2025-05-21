@@ -4,7 +4,7 @@ const rl = @import("raylib");
 
 const bot = @import("bot.zig");
 const sp = @import("spawn.zig");
-const geo = @import("geometry.zig");
+const geo = @import("geometry/root.zig");
 
 const mov = @import("movement/root.zig");
 
