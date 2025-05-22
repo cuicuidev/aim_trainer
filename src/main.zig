@@ -110,7 +110,13 @@ pub fn main() anyerror!void {
                 defer rl.endDrawing();
                 rl.clearBackground(rl.Color.dark_gray);
 
-                rl.drawText("Aimalytics", screen_width / 2, screen_height / 4, 20, rl.Color.black);
+                rl.drawText(
+                    "Aimalytics",
+                    @divFloor((screen_width - rl.measureText("Aimalytics", 200)), @as(i32, 2)),
+                    screen_height / 8,
+                    200,
+                    rl.Color.black,
+                );
 
                 const button_width = screen_width * 0.2;
                 const button_height = screen_height * 0.08;
@@ -129,8 +135,8 @@ pub fn main() anyerror!void {
                     button_height,
                 );
 
-                const base_color = rl.Color.dark_gray;
-                const hover_color = rl.Color.light_gray;
+                const base_color = rl.Color.light_gray;
+                const hover_color = rl.Color.white;
                 const text_color = rl.Color.black;
 
                 if (drawButton("Clicking", play_clicking_btn, base_color, hover_color, text_color)) {
@@ -159,7 +165,6 @@ pub fn main() anyerror!void {
                 }
 
                 if (drawButton("Tracking", play_tracking_btn, base_color, hover_color, text_color)) {
-                    STATE = GameState.scenario;
                     STATE = GameState.scenario;
                     bot_config = bot.BotConfig{
                         .n_bots = 1,
@@ -276,6 +281,18 @@ fn drawButton(label: [:0]const u8, rect: rl.Rectangle, base_color: rl.Color, hov
 
     return is_clicked;
 }
+
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 
 const STATIC_CONFIG = bot.mov.kinetic.KineticConfig{
     .constraints = bot.mov.constraints.Constraints{
