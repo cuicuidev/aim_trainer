@@ -15,36 +15,36 @@ pub const Geometry = union(enum) {
 
     pub fn hitScan(self: *Self, camera: *rl.Camera3D) ?rl.Vector3 {
         return switch (self.*) {
-            .sphere => |*s| s.hitScan(camera),
-            .capsule => |*c| c.hitScan(camera),
+            .sphere => |*g| g.hitScan(camera),
+            .capsule => |*g| g.hitScan(camera),
         };
     }
 
     pub fn draw(self: *Self) void {
         switch (self.*) {
-            .sphere => |*s| s.draw(),
-            .capsule => |*c| c.draw(),
+            .sphere => |*g| g.draw(),
+            .capsule => |*g| g.draw(),
         }
     }
 
     pub fn kineticHandlerStep(self: *Self, dt: f32) void {
         switch (self.*) {
-            .sphere => |*s| {
-                s.position = s.kinetic_handler.step(s.position, dt);
+            .sphere => |*g| {
+                g.position = g.kinetic_handler.step(g.position, dt);
             },
-            .capsule => |*c| {
-                c.position = c.kinetic_handler.step(c.position, dt);
+            .capsule => |*g| {
+                g.position = g.kinetic_handler.step(g.position, dt);
             },
         }
     }
 
     pub fn setPosition(self: *Self, position: rl.Vector3) void {
         switch (self.*) {
-            .sphere => |*s| {
-                s.position = position;
+            .sphere => |*g| {
+                g.position = position;
             },
-            .capsule => |*c| {
-                c.position = position;
+            .capsule => |*g| {
+                g.position = position;
             },
         }
     }

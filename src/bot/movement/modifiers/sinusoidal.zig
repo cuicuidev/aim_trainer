@@ -6,12 +6,12 @@ pub const SinusoidalWanderModifier = struct {
     amplitude: f32,
     freq: f32,
 
-    pub fn apply(ctx: *anyopaque, time: f32) rl.Vector3 {
-        const self = @as(*SinusoidalWanderModifier, @ptrCast(@alignCast(ctx)));
+    pub fn apply(ctx: *const anyopaque, time: f32) rl.Vector3 {
+        const self = @as(*const SinusoidalWanderModifier, @ptrCast(@alignCast(ctx)));
         return sinusoidalWander(time, self.amplitude, self.freq);
     }
 
-    pub fn toModule(self: *SinusoidalWanderModifier, weight: f32) m.MovementModule {
+    pub fn toModule(self: *const SinusoidalWanderModifier, weight: f32) m.MovementModule {
         return m.MovementModule{
             .ctx = self,
             .applyFn = SinusoidalWanderModifier.apply,

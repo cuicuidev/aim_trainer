@@ -1,9 +1,9 @@
 const rl = @import("raylib");
 
-const MovementStepFn = *const fn (ctx: *anyopaque, time: f32) rl.Vector3;
+const MovementStepFn = *const fn (ctx: *const anyopaque, time: f32) rl.Vector3;
 
 pub const MovementModule = struct {
-    ctx: *anyopaque,
+    ctx: *const anyopaque,
     applyFn: MovementStepFn,
     weight: f32,
 };

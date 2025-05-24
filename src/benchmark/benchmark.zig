@@ -119,20 +119,20 @@ const STATIC_CONFIG = bot.mov.kinetic.KineticConfig{
 
 // -----------------------------------------------------------------------------------------------
 
-var sin_wander = bot.mov.modifiers.sinusoidal.SinusoidalWanderModifier{
+const sin_wander = bot.mov.modifiers.sinusoidal.SinusoidalWanderModifier{
     .amplitude = 20.0,
     .freq = 2.0,
 };
 
-var noise_wander = bot.mov.modifiers.noise.NoiseWanderModifier{
+const noise_wander = bot.mov.modifiers.noise.NoiseWanderModifier{
     .strength = 3.0,
 };
 
-var min_speed = bot.mov.constraints.velocity.MinSpeedConstraint{ .min_speed = 12.0 };
+const min_speed = bot.mov.constraints.velocity.MinSpeedConstraint{ .min_speed = 12.0 };
 
-var max_speed = bot.mov.constraints.velocity.MaxSpeedConstraint{ .max_speed = 20.0 };
+const max_speed = bot.mov.constraints.velocity.MaxSpeedConstraint{ .max_speed = 20.0 };
 
-var bias = bot.mov.constraints.acceleration.PointBiasConstraint{
+const bias = bot.mov.constraints.acceleration.PointBiasConstraint{
     .point = rl.Vector3.init(50.0, 2.0, 0.0),
     .strength = 2.0,
 };
