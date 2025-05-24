@@ -17,6 +17,13 @@ pub const Menu = struct {
 };
 
 pub const MenuOptions = enum {
-    start_benchmark,
-    quit,
+    goto_main_menu,
+    goto_benchmark_menu,
+    goto_analysis_menu,
+
+    next_scenario,
+    repeat_scenario,
+    prev_scenario,
+
+    quit_trainer,
 };

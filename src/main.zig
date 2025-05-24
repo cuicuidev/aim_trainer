@@ -6,6 +6,7 @@ const rg = @import("raygui");
 const scen = @import("scen/root.zig");
 const bot = @import("bot/root.zig");
 const menu = @import("menu/root.zig");
+const bm = @import("benchmark/benchmark.zig");
 
 const SCREEN_WIDTH = 1920;
 const SCREEN_HEIGHT = 1080;
@@ -87,43 +88,18 @@ pub fn main() anyerror!void {
         .projection = rl.CameraProjection.perspective,
     };
 
-    // Scenario prep
-    var sensitivity = Sensitivity.init(70.0, 1600.0);
-    const spawn = scen.Spawn.init(
-        rl.Vector3.init(50.0, 2.0, 0.0),
-        rl.Vector3.init(1.0, 0.0, 0.0),
-        rl.Vector3.init(0.0, 0.0, 1.0),
-        rl.Vector3.init(0.0, 1.0, 0.0),
-        30.0,
-        15.0,
-        10.0,
-    );
+    const sensitivity = Sensitivity.init(70.0, 1600.0);
 
-    const bot_config = bot.BotConfig{
-        .n_bots = 5,
-        .bot_initial_position = null,
-        .geometry = bot.Geometry{
-            .sphere = bot.geo.Sphere.init(
-                spawn.origin,
-                0.3,
-                rl.Color.red,
-                STATIC_CONFIG,
-            ),
-        },
-    };
+    // Benchmark prep
+    var benchmark = try bm.Benchmark.default(allocator);
+    defer benchmark.deinit();
 
-    var scenario = try scen.Scenario.init(
-        allocator,
-        spawn,
-        bot_config,
-        scen.ScenarioType{
-            .clicking = scen.Clicking{},
-        },
-    );
-    errdefer scenario.deinit();
+    var scenario: scen.Scenario = undefined;
+    var time_elapsed: f32 = 0.0;
 
     // Menu prep
     var main_menu = menu.MainMenu.init(SCREEN_HEIGHT, SCREEN_WIDTH, "Aymalitcs");
+    var benchmark_menu = menu.BenchmarkMenu.init(SCREEN_HEIGHT, SCREEN_WIDTH, "Benchmark");
     var _menu = main_menu.toMenu();
 
     // Main game loop
@@ -140,12 +116,41 @@ pub fn main() anyerror!void {
 
                 if (_menu.draw()) |option| {
                     switch (option) {
-                        .start_benchmark => STATE = GameState.scenario_gameplay,
-                        .quit => STATE = GameState.quit,
+                        .goto_benchmark_menu => {
+                            STATE = GameState.benchmark_main_menu;
+                            _menu = benchmark_menu.toMenu();
+                        },
+                        .quit_trainer => STATE = GameState.quit,
+                        else => unreachable,
+                    }
+                }
+            },
+            .benchmark_main_menu => {
+                if (rl.isCursorHidden()) {
+                    rl.enableCursor();
+                }
+
+                rl.beginDrawing();
+                defer rl.endDrawing();
+                rl.clearBackground(rl.Color.dark_gray);
+
+                if (_menu.draw()) |option| {
+                    switch (option) {
+                        .next_scenario => STATE = GameState.scenario_gameplay,
+                        .goto_main_menu => {
+                            STATE = GameState.main_menu;
+                            _menu = main_menu.toMenu();
+                        },
+                        else => unreachable,
                     }
                 }
             },
             .scenario_gameplay => {
+                if (benchmark.isCompleted()) {
+                    STATE = GameState.main_menu;
+                    continue;
+                }
+
                 if (!rl.isCursorHidden()) {
                     rl.disableCursor();
                     camera = rl.Camera3D{
@@ -155,21 +160,22 @@ pub fn main() anyerror!void {
                         .fovy = 58.0,
                         .projection = rl.CameraProjection.perspective,
                     };
+                    scenario = benchmark.scenario();
                 }
 
                 // ---------------------------------------------------------------------------------------
                 // UPDATE --------------------------------------------------------------------------------
                 // ---------------------------------------------------------------------------------------
 
-                // Sens adjustment
-                if (rl.isKeyPressed(rl.KeyboardKey.page_up)) {
-                    sensitivity.setCM360(sensitivity.cm360 + 1.0);
+                time_elapsed += rl.getFrameTime();
+
+                if (time_elapsed >= scenario.duration_ms) {
+                    std.debug.print("{d}", .{time_elapsed});
+                    benchmark.next();
+                    STATE = GameState.benchmark_main_menu;
+                    time_elapsed = 0.0;
+                    continue;
                 }
-                if (rl.isKeyPressed(rl.KeyboardKey.page_down)) {
-                    sensitivity.setCM360(sensitivity.cm360 - 1.0);
-                }
-                const cm360_str = try sensitivity.allocPrintCM360(allocator);
-                defer allocator.free(cm360_str);
 
                 // Camera update
                 const mouse_delta = rl.getMouseDelta();
@@ -183,8 +189,6 @@ pub fn main() anyerror!void {
 
                 // Scenario events
                 scenario.kill(&camera);
-                const score = try std.fmt.allocPrintZ(allocator, "Score {d:2.2}", .{scenario.getScore()});
-                defer allocator.free(score);
 
                 // -----------------------------------------------------------------------------------------
                 // RENDER ----------------------------------------------------------------------------------
@@ -204,8 +208,6 @@ pub fn main() anyerror!void {
 
                 // 2D RENDER -------------------------------------------------------------------------------
                 rl.drawFPS(SCREEN_WIDTH - 200, 40);
-                rl.drawText(cm360_str, SCREEN_WIDTH - 200, 10, 20, rl.Color.dark_green);
-                rl.drawText(score, SCREEN_WIDTH - 300, 100, 20, rl.Color.dark_green);
                 rl.drawCircle(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 3.0, rl.Color.black);
 
                 if (rl.isKeyPressed(rl.KeyboardKey.escape)) {
@@ -218,117 +220,3 @@ pub fn main() anyerror!void {
         }
     }
 }
-
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-
-const STATIC_CONFIG = bot.mov.kinetic.KineticConfig{
-    .constraints = bot.mov.constraints.Constraints{
-        .accel_constraints = null,
-        .velocity_constraints = null,
-    },
-    .modifiers = bot.mov.modifiers.MovementModifiers{
-        .modules = null,
-    },
-};
-
-// TODO: allocate wanderers dynamically instead of using global variables.
-var sin_wander = bot.mov.modifiers.sinusoidal.SinusoidalWanderModifier{
-    .amplitude = 20.0,
-    .freq = 2.0,
-};
-
-var noise_wander = bot.mov.modifiers.noise.NoiseWanderModifier{
-    .strength = 3.0,
-};
-
-var min_speed = bot.mov.constraints.velocity.MinSpeedConstraint{ .min_speed = 12.0 };
-
-var max_speed = bot.mov.constraints.velocity.MaxSpeedConstraint{ .max_speed = 20.0 };
-
-var bias = bot.mov.constraints.acceleration.PointBiasConstraint{
-    .point = rl.Vector3.init(50.0, 2.0, 0.0),
-    .strength = 2.0,
-};
-
-const modifiers_arr = [2]bot.mov.modifiers.MovementModule{
-    sin_wander.toModule(1.0),
-    noise_wander.toModule(1.0),
-};
-
-const modifiers = bot.mov.modifiers.MovementModifiers{
-    .modules = &modifiers_arr,
-};
-
-const vel_constraints_arr = [2]bot.mov.constraints.VelocityConstraintModule{
-    min_speed.toModule(),
-    max_speed.toModule(),
-};
-
-const acc_constraints_arr = [1]bot.mov.constraints.AccelConstraintModule{
-    bias.toModule(),
-};
-
-const constraints = bot.mov.constraints.Constraints{
-    .accel_constraints = &acc_constraints_arr,
-    .velocity_constraints = &vel_constraints_arr,
-};
-
-const KINETIC_CONFIG = bot.mov.kinetic.KineticConfig{
-    .constraints = constraints,
-    .modifiers = modifiers,
-};
-
-// bot_config = bot.BotConfig{
-//     .n_bots = 3,
-//     .bot_initial_position = null,
-//     .geometry = bot.Geometry{
-//         .sphere = bot.geo.Sphere.init(
-//             spawn.origin,
-//             1.0,
-//             rl.Color.red,
-//             STATIC_CONFIG,
-//         ),
-//     },
-// };
-
-// scenario = try scen.Scenario.init(
-//     allocator,
-//     spawn,
-//     bot_config,
-//     scen.ScenarioType{
-//         .clicking = scen.Clicking{},
-//     },
-// );
-
-// bot_config = bot.BotConfig{
-//     .n_bots = 1,
-//     .bot_initial_position = spawn.origin,
-//     .geometry = bot.Geometry{
-//         .capsule = bot.geo.Capsule.init(
-//             spawn.origin,
-//             1.0,
-//             3.0,
-//             rl.Color.red,
-//             KINETIC_CONFIG,
-//         ),
-//     },
-// };
-
-// scenario = try scen.Scenario.init(
-//     allocator,
-//     spawn,
-//     bot_config,
-//     scen.ScenarioType{
-//         .tracking = scen.Tracking{},
-//     },
-// );
