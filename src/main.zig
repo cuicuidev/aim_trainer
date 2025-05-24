@@ -139,6 +139,7 @@ pub fn main() anyerror!void {
                         .next_scenario => STATE = GameState.scenario_gameplay,
                         .goto_main_menu => {
                             STATE = GameState.main_menu;
+                            benchmark.reset();
                             _menu = main_menu.toMenu();
                         },
                         else => unreachable,
@@ -146,11 +147,6 @@ pub fn main() anyerror!void {
                 }
             },
             .scenario_gameplay => {
-                if (benchmark.isCompleted()) {
-                    STATE = GameState.main_menu;
-                    continue;
-                }
-
                 if (!rl.isCursorHidden()) {
                     rl.disableCursor();
                     camera = rl.Camera3D{
@@ -209,11 +205,6 @@ pub fn main() anyerror!void {
                 // 2D RENDER -------------------------------------------------------------------------------
                 rl.drawFPS(SCREEN_WIDTH - 200, 40);
                 rl.drawCircle(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 3.0, rl.Color.black);
-
-                if (rl.isKeyPressed(rl.KeyboardKey.escape)) {
-                    STATE = GameState.main_menu;
-                    std.time.sleep(100_000_000);
-                }
             },
             .quit => rl.closeWindow(),
             else => unreachable,

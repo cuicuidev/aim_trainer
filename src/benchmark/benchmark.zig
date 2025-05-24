@@ -105,6 +105,10 @@ pub const Benchmark = struct {
     pub fn scenario(self: *Self) scen.Scenario {
         return self.scenarios[self.at];
     }
+
+    pub fn reset(self: *Self) void {
+        self.at = 0;
+    }
 };
 
 const STATIC_CONFIG = bot.mov.kinetic.KineticConfig{
