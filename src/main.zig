@@ -1,13 +1,21 @@
 const std = @import("std");
 
 const rl = @import("raylib");
+const rg = @import("raygui");
 
 const scen = @import("scen/root.zig");
 const bot = @import("bot/root.zig");
 
+const SCREEN_WIDTH = 1920;
+const SCREEN_HEIGHT = 1080;
+
 pub const GameState = enum {
-    menu,
-    scenario,
+    main_menu,
+    benchmark_main_menu,
+    benchmark_scenario_end_menu,
+    benchmark_results_menu,
+    scenario_selection_menu,
+    scenario_gameplay,
     exit,
 };
 
@@ -49,7 +57,7 @@ const Sensitivity = struct {
 };
 
 pub fn main() anyerror!void {
-    var STATE = GameState.menu;
+    var STATE = GameState.main_menu;
 
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
@@ -57,9 +65,6 @@ pub fn main() anyerror!void {
     const allocator = gpa.allocator();
 
     // Initialization
-    const screen_width = 1920;
-    const screen_height = 1080;
-
     const config_flags = rl.ConfigFlags{
         .fullscreen_mode = true,
         .window_unfocused = false,
@@ -68,7 +73,7 @@ pub fn main() anyerror!void {
 
     rl.setConfigFlags(config_flags);
 
-    rl.initWindow(screen_width, screen_height, "Aimalytics");
+    rl.initWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Aimalytics");
     errdefer rl.closeWindow();
 
     rl.setExitKey(rl.KeyboardKey.null);
@@ -93,15 +98,55 @@ pub fn main() anyerror!void {
         10.0,
     );
 
-    var bot_config: bot.BotConfig = undefined;
+    const bot_config = bot.BotConfig{
+        .n_bots = 5,
+        .bot_initial_position = null,
+        .geometry = bot.Geometry{
+            .sphere = bot.geo.Sphere.init(
+                spawn.origin,
+                0.3,
+                rl.Color.red,
+                STATIC_CONFIG,
+            ),
+        },
+    };
 
-    var scenario: scen.Scenario = undefined;
+    var scenario = try scen.Scenario.init(
+        allocator,
+        spawn,
+        bot_config,
+        scen.ScenarioType{
+            .clicking = scen.Clicking{},
+        },
+    );
     errdefer scenario.deinit();
+
+    // Menu prep
+    // BUTTONS
+    var font = try rl.getFontDefault();
+    font.baseSize = 200;
+    rg.guiSetFont(font);
+    const button_width = SCREEN_WIDTH * 0.2;
+    const button_height = SCREEN_HEIGHT * 0.08;
+
+    const start_benchmark_btn_shape = rl.Rectangle.init(
+        (SCREEN_WIDTH - button_width) / 2,
+        SCREEN_HEIGHT / 2 - button_height * 1.5,
+        button_width,
+        button_height,
+    );
+
+    const quit_trainer_btn_shape = rl.Rectangle.init(
+        (SCREEN_WIDTH - button_width) / 2,
+        SCREEN_HEIGHT / 2 + button_height * 0.5,
+        button_width,
+        button_height,
+    );
 
     // Main game loop
     while (!rl.windowShouldClose()) {
         switch (STATE) {
-            .menu => {
+            .main_menu => {
                 if (rl.isCursorHidden()) {
                     rl.enableCursor();
                 }
@@ -110,94 +155,35 @@ pub fn main() anyerror!void {
                 defer rl.endDrawing();
                 rl.clearBackground(rl.Color.dark_gray);
 
+                // TITLE
                 rl.drawText(
                     "Aimalytics",
-                    @divFloor((screen_width - rl.measureText("Aimalytics", 200)), @as(i32, 2)),
-                    screen_height / 8,
+                    @divFloor((SCREEN_WIDTH - rl.measureText("Aimalytics", 200)), @as(i32, 2)),
+                    SCREEN_HEIGHT / 8,
                     200,
                     rl.Color.black,
                 );
 
-                const button_width = screen_width * 0.2;
-                const button_height = screen_height * 0.08;
-
-                const play_clicking_btn = rl.Rectangle.init(
-                    (screen_width - button_width) / 2,
-                    screen_height / 2 - button_height * 1.5,
-                    button_width,
-                    button_height,
-                );
-
-                const play_tracking_btn = rl.Rectangle.init(
-                    (screen_width - button_width) / 2,
-                    screen_height / 2 + button_height * 0.5,
-                    button_width,
-                    button_height,
-                );
-
-                const base_color = rl.Color.light_gray;
-                const hover_color = rl.Color.white;
-                const text_color = rl.Color.black;
-
-                if (drawButton("Clicking", play_clicking_btn, base_color, hover_color, text_color)) {
-                    STATE = GameState.scenario;
-                    bot_config = bot.BotConfig{
-                        .n_bots = 3,
-                        .bot_initial_position = null,
-                        .geometry = bot.Geometry{
-                            .sphere = bot.geo.Sphere.init(
-                                spawn.origin,
-                                1.0,
-                                rl.Color.red,
-                                STATIC_CONFIG,
-                            ),
-                        },
-                    };
-
-                    scenario = try scen.Scenario.init(
-                        allocator,
-                        spawn,
-                        bot_config,
-                        scen.ScenarioType{
-                            .clicking = scen.Clicking{},
-                        },
-                    );
+                if (rg.guiButton(start_benchmark_btn_shape, "Benckmark") == 1) {
+                    STATE = GameState.scenario_gameplay;
                 }
 
-                if (drawButton("Tracking", play_tracking_btn, base_color, hover_color, text_color)) {
-                    STATE = GameState.scenario;
-                    bot_config = bot.BotConfig{
-                        .n_bots = 1,
-                        .bot_initial_position = spawn.origin,
-                        .geometry = bot.Geometry{
-                            .capsule = bot.geo.Capsule.init(
-                                spawn.origin,
-                                1.0,
-                                3.0,
-                                rl.Color.red,
-                                KINETIC_CONFIG,
-                            ),
-                        },
-                    };
-
-                    scenario = try scen.Scenario.init(
-                        allocator,
-                        spawn,
-                        bot_config,
-                        scen.ScenarioType{
-                            .tracking = scen.Tracking{},
-                        },
-                    );
-                }
-
-                if (rl.isKeyPressed(rl.KeyboardKey.escape)) {
+                if (rg.guiButton(quit_trainer_btn_shape, "Quit") == 1) {
                     STATE = GameState.exit;
+                    scenario.deinit();
                     continue;
                 }
             },
-            .scenario => {
+            .scenario_gameplay => {
                 if (!rl.isCursorHidden()) {
                     rl.disableCursor();
+                    camera = rl.Camera3D{
+                        .position = rl.Vector3.init(0.0, 2.0, 0.0),
+                        .target = rl.Vector3.init(10.0, 2.0, 0.0),
+                        .up = rl.Vector3.init(0.0, 1.0, 0.0),
+                        .fovy = 58.0,
+                        .projection = rl.CameraProjection.perspective,
+                    };
                 }
 
                 // ---------------------------------------------------------------------------------------
@@ -246,40 +232,20 @@ pub fn main() anyerror!void {
                 }
 
                 // 2D RENDER -------------------------------------------------------------------------------
-                rl.drawFPS(screen_width - 200, 40);
-                rl.drawText(cm360_str, screen_width - 200, 10, 20, rl.Color.dark_green);
-                rl.drawText(score, screen_width - 300, 100, 20, rl.Color.dark_green);
-                rl.drawCircle(screen_width / 2, screen_height / 2, 3.0, rl.Color.black);
+                rl.drawFPS(SCREEN_WIDTH - 200, 40);
+                rl.drawText(cm360_str, SCREEN_WIDTH - 200, 10, 20, rl.Color.dark_green);
+                rl.drawText(score, SCREEN_WIDTH - 300, 100, 20, rl.Color.dark_green);
+                rl.drawCircle(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 3.0, rl.Color.black);
 
                 if (rl.isKeyPressed(rl.KeyboardKey.escape)) {
-                    STATE = GameState.menu;
-                    scenario.deinit();
+                    STATE = GameState.main_menu;
                     std.time.sleep(100_000_000);
                 }
             },
             .exit => rl.closeWindow(),
+            else => unreachable,
         }
     }
-}
-
-fn drawButton(label: [:0]const u8, rect: rl.Rectangle, base_color: rl.Color, hover_color: rl.Color, text_color: rl.Color) bool {
-    const mouse_pos = rl.getMousePosition();
-    const is_hovered = rl.checkCollisionPointRec(mouse_pos, rect);
-    const is_clicked = is_hovered and rl.isMouseButtonPressed(rl.MouseButton.left);
-
-    const bg_color = if (is_hovered) hover_color else base_color;
-
-    rl.drawRectangleRec(rect, bg_color);
-
-    // Center text within button
-    const font_size = @as(i32, @intFromFloat(rect.height * 0.5));
-    const text_width = rl.measureText(label, font_size);
-    const text_x = @as(i32, @intFromFloat(rect.x + (rect.width - @as(f32, @floatFromInt(text_width))) / 2));
-    const text_y = @as(i32, @intFromFloat(rect.y + (rect.height - @as(f32, @floatFromInt(font_size))) / 2));
-
-    rl.drawText(label, text_x, text_y, font_size, text_color);
-
-    return is_clicked;
 }
 
 //-----------------------------------------------------------------------------
@@ -350,3 +316,48 @@ const KINETIC_CONFIG = bot.mov.kinetic.KineticConfig{
     .constraints = constraints,
     .modifiers = modifiers,
 };
+
+// bot_config = bot.BotConfig{
+//     .n_bots = 3,
+//     .bot_initial_position = null,
+//     .geometry = bot.Geometry{
+//         .sphere = bot.geo.Sphere.init(
+//             spawn.origin,
+//             1.0,
+//             rl.Color.red,
+//             STATIC_CONFIG,
+//         ),
+//     },
+// };
+
+// scenario = try scen.Scenario.init(
+//     allocator,
+//     spawn,
+//     bot_config,
+//     scen.ScenarioType{
+//         .clicking = scen.Clicking{},
+//     },
+// );
+
+// bot_config = bot.BotConfig{
+//     .n_bots = 1,
+//     .bot_initial_position = spawn.origin,
+//     .geometry = bot.Geometry{
+//         .capsule = bot.geo.Capsule.init(
+//             spawn.origin,
+//             1.0,
+//             3.0,
+//             rl.Color.red,
+//             KINETIC_CONFIG,
+//         ),
+//     },
+// };
+
+// scenario = try scen.Scenario.init(
+//     allocator,
+//     spawn,
+//     bot_config,
+//     scen.ScenarioType{
+//         .tracking = scen.Tracking{},
+//     },
+// );
