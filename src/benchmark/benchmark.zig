@@ -8,12 +8,14 @@ const bot = @import("../bot/root.zig");
 pub const Benchmark = struct {
     allocator: std.mem.Allocator,
     scenarios: []const scen.Scenario,
+    scores: []f64,
     at: usize,
 
     const Self = @This();
 
     pub fn default(allocator: std.mem.Allocator) !Self {
         var scenarios = try allocator.alloc(scen.Scenario, 2);
+        const scores = try allocator.alloc(f64, 2);
 
         const spawn_0 = scen.Spawn.init(
             rl.Vector3.init(50.0, 2.0, 0.0),
@@ -83,6 +85,7 @@ pub const Benchmark = struct {
         return .{
             .allocator = allocator,
             .scenarios = scenarios,
+            .scores = scores,
             .at = 0,
         };
     }
@@ -92,14 +95,15 @@ pub const Benchmark = struct {
             @constCast(s).deinit();
         }
         self.allocator.free(self.scenarios);
+        self.allocator.free(self.scores);
     }
 
     pub fn next(self: *Self) void {
         self.at += 1;
     }
 
-    pub fn isCompleted(self: *Self) bool {
-        return self.at == self.scenarios.len;
+    pub fn setScore(self: *Self, score: f64) void {
+        self.scores[self.at] = score;
     }
 
     pub fn scenario(self: *Self) scen.Scenario {

@@ -19,7 +19,7 @@ pub const Scenario = struct {
     bots: []bot.Bot,
     bot_config: bot.BotConfig,
     scenario_type: ScenarioType,
-    duration_ms: f32 = 5.0,
+    duration_ms: f32 = 60.0,
 
     const Self = @This();
 
@@ -112,8 +112,9 @@ pub const Clicking = struct {
         if (self.n_clicks == 0) {
             return 0.0;
         }
-        const score = @as(f64, @floatFromInt(self.n_hits)) / @as(f64, @floatFromInt(self.n_clicks));
-        return score;
+        const accuracy = @as(f64, @floatFromInt(self.n_hits)) / @as(f64, @floatFromInt(self.n_clicks));
+        const accuracy_sqrt = @sqrt(accuracy);
+        return @as(f64, @floatFromInt(self.n_hits)) * accuracy_sqrt;
     }
 };
 
@@ -146,7 +147,7 @@ pub const Tracking = struct {
         if (self.total_frames == 0) {
             return 0.0;
         }
-        const score = @as(f64, @floatFromInt(self.hit_frames)) / @as(f64, @floatFromInt(self.total_frames));
+        const score = @as(f64, @floatFromInt(self.hit_frames)) / @as(f64, @floatFromInt(self.total_frames)) * 100;
         return score;
     }
 };

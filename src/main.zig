@@ -138,6 +138,10 @@ pub fn main() anyerror!void {
                     switch (option) {
                         .next_scenario => STATE = GameState.scenario_gameplay,
                         .goto_main_menu => {
+                            for (benchmark.scores) |score| {
+                                std.debug.print("{d}\n", .{score});
+                            }
+
                             STATE = GameState.main_menu;
                             benchmark.reset();
                             _menu = main_menu.toMenu();
@@ -166,7 +170,8 @@ pub fn main() anyerror!void {
                 time_elapsed += rl.getFrameTime();
 
                 if (time_elapsed >= scenario.duration_ms) {
-                    std.debug.print("{d}", .{time_elapsed});
+                    const score = scenario.getScore();
+                    benchmark.setScore(score);
                     benchmark.next();
                     STATE = GameState.benchmark_main_menu;
                     time_elapsed = 0.0;
@@ -204,7 +209,7 @@ pub fn main() anyerror!void {
 
                 // 2D RENDER -------------------------------------------------------------------------------
                 rl.drawFPS(SCREEN_WIDTH - 200, 40);
-                rl.drawCircle(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 3.0, rl.Color.black);
+                rl.drawCircle(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 2.5, rl.Color.black);
             },
             .quit => rl.closeWindow(),
             else => unreachable,
