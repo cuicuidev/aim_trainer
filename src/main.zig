@@ -123,28 +123,8 @@ pub fn main() anyerror!void {
     errdefer scenario.deinit();
 
     // Menu prep
-    const button_width = SCREEN_WIDTH * 0.2;
-    const button_height = SCREEN_HEIGHT * 0.08;
-
-    const start_benchmark_rect = rl.Rectangle.init(
-        (SCREEN_WIDTH - button_width) / 2,
-        SCREEN_HEIGHT / 2 - button_height * 1.5,
-        button_width,
-        button_height,
-    );
-
-    const quit_trainer_rect = rl.Rectangle.init(
-        (SCREEN_WIDTH - button_width) / 2,
-        SCREEN_HEIGHT / 2 + button_height * 0.5,
-        button_width,
-        button_height,
-    );
-
-    var main_menu = menu.MainMenu.init(
-        start_benchmark_rect,
-        quit_trainer_rect,
-    );
-    var _menu = main_menu.toMenu(SCREEN_HEIGHT, SCREEN_WIDTH, 200, "Aimalytcs");
+    var main_menu = menu.MainMenu.init(SCREEN_HEIGHT, SCREEN_WIDTH, "Aymalitcs");
+    var _menu = main_menu.toMenu();
 
     // Main game loop
     while (!rl.windowShouldClose()) {
