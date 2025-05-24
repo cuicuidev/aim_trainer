@@ -5,6 +5,7 @@ const rg = @import("raygui");
 
 const scen = @import("scen/root.zig");
 const bot = @import("bot/root.zig");
+const menu = @import("menu/root.zig");
 
 const SCREEN_WIDTH = 1920;
 const SCREEN_HEIGHT = 1080;
@@ -16,7 +17,7 @@ pub const GameState = enum {
     benchmark_results_menu,
     scenario_selection_menu,
     scenario_gameplay,
-    exit,
+    quit,
 };
 
 const Sensitivity = struct {
@@ -122,26 +123,28 @@ pub fn main() anyerror!void {
     errdefer scenario.deinit();
 
     // Menu prep
-    // BUTTONS
-    var font = try rl.getFontDefault();
-    font.baseSize = 200;
-    rg.guiSetFont(font);
     const button_width = SCREEN_WIDTH * 0.2;
     const button_height = SCREEN_HEIGHT * 0.08;
 
-    const start_benchmark_btn_shape = rl.Rectangle.init(
+    const start_benchmark_rect = rl.Rectangle.init(
         (SCREEN_WIDTH - button_width) / 2,
         SCREEN_HEIGHT / 2 - button_height * 1.5,
         button_width,
         button_height,
     );
 
-    const quit_trainer_btn_shape = rl.Rectangle.init(
+    const quit_trainer_rect = rl.Rectangle.init(
         (SCREEN_WIDTH - button_width) / 2,
         SCREEN_HEIGHT / 2 + button_height * 0.5,
         button_width,
         button_height,
     );
+
+    var main_menu = menu.MainMenu.init(
+        start_benchmark_rect,
+        quit_trainer_rect,
+    );
+    var _menu = main_menu.toMenu(SCREEN_HEIGHT, SCREEN_WIDTH, 200, "Aimalytcs");
 
     // Main game loop
     while (!rl.windowShouldClose()) {
@@ -155,23 +158,11 @@ pub fn main() anyerror!void {
                 defer rl.endDrawing();
                 rl.clearBackground(rl.Color.dark_gray);
 
-                // TITLE
-                rl.drawText(
-                    "Aimalytics",
-                    @divFloor((SCREEN_WIDTH - rl.measureText("Aimalytics", 200)), @as(i32, 2)),
-                    SCREEN_HEIGHT / 8,
-                    200,
-                    rl.Color.black,
-                );
-
-                if (rg.guiButton(start_benchmark_btn_shape, "Benckmark") == 1) {
-                    STATE = GameState.scenario_gameplay;
-                }
-
-                if (rg.guiButton(quit_trainer_btn_shape, "Quit") == 1) {
-                    STATE = GameState.exit;
-                    scenario.deinit();
-                    continue;
+                if (_menu.draw()) |option| {
+                    switch (option) {
+                        .start_benchmark => STATE = GameState.scenario_gameplay,
+                        .quit => STATE = GameState.quit,
+                    }
                 }
             },
             .scenario_gameplay => {
@@ -242,7 +233,7 @@ pub fn main() anyerror!void {
                     std.time.sleep(100_000_000);
                 }
             },
-            .exit => rl.closeWindow(),
+            .quit => rl.closeWindow(),
             else => unreachable,
         }
     }
