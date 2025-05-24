@@ -2,58 +2,51 @@ const rl = @import("raylib");
 const rg = @import("raygui");
 
 const menu = @import("menu.zig");
+const bm = @import("../benchmark/root.zig");
 
 pub const BenchmarkMenu = struct {
-    _start_benchmark_rect: rl.Rectangle,
-    _next_scenario_rect: rl.Rectangle,
-    _quit_benchmark_rect: rl.Rectangle,
+    _pos_1: rl.Rectangle,
+    _pos_2: rl.Rectangle,
     _title: [:0]const u8,
     _font_size: i32 = 200,
+    _benchmark_ptr: *bm.Benchmark,
 
     _screen_width: i32,
     _screen_height: i32,
 
     const Self = @This();
 
-    pub fn init(screen_height: i32, screen_width: i32, title: [:0]const u8) Self {
+    pub fn init(screen_height: i32, screen_width: i32, title: [:0]const u8, benchmark_ptr: *bm.Benchmark) Self {
         const screen_height_f: f32 = @as(f32, @floatFromInt(screen_height));
         const screen_width_f: f32 = @as(f32, @floatFromInt(screen_width));
         const button_height: f32 = screen_height_f * 0.08;
         const button_width: f32 = screen_width_f * 0.2;
 
-        const start_benchmark_rect = rl.Rectangle.init(
+        const pos_1_rect = rl.Rectangle.init(
             (screen_width_f - button_width) / 2,
             screen_height_f / 2 - button_height * 1.5,
             button_width,
             button_height,
         );
 
-        const next_scenario_rect = rl.Rectangle.init(
+        const pos_2_rect = rl.Rectangle.init(
             (screen_width_f - button_width) / 2,
             screen_height_f / 2 + button_height * 0.5,
             button_width,
             button_height,
         );
 
-        const quit_benchmark_rect = rl.Rectangle.init(
-            (screen_width_f - button_width) / 2,
-            screen_height_f / 2 + button_height * 1.5,
-            button_width,
-            button_height,
-        );
-
         return .{
-            ._start_benchmark_rect = start_benchmark_rect,
-            ._next_scenario_rect = next_scenario_rect,
-            ._quit_benchmark_rect = quit_benchmark_rect,
+            ._pos_1 = pos_1_rect,
+            ._pos_2 = pos_2_rect,
             ._title = title,
             ._screen_width = screen_width,
             ._screen_height = screen_height,
+            ._benchmark_ptr = benchmark_ptr,
         };
     }
 
     pub fn draw(ctx: *anyopaque) ?menu.MenuOptions {
-        // TODO: This has to hide start and next buttons depending on the benchmark state
         const self = @as(*Self, @ptrCast(@alignCast(ctx)));
 
         rl.drawText(
@@ -64,15 +57,17 @@ pub const BenchmarkMenu = struct {
             rl.Color.black,
         );
 
-        if (rg.guiButton(self._start_benchmark_rect, "Start") == 1) {
-            return menu.MenuOptions.next_scenario;
+        if (self._benchmark_ptr.at == 0) {
+            if (rg.guiButton(self._pos_1, "Start") == 1) {
+                return menu.MenuOptions.next_scenario;
+            }
+        } else if (self._benchmark_ptr.scenarios.len != self._benchmark_ptr.at) {
+            if (rg.guiButton(self._pos_1, "Next") == 1) {
+                return menu.MenuOptions.next_scenario;
+            }
         }
 
-        if (rg.guiButton(self._next_scenario_rect, "Next") == 1) {
-            return menu.MenuOptions.next_scenario;
-        }
-
-        if (rg.guiButton(self._quit_benchmark_rect, "Quit") == 1) {
+        if (rg.guiButton(self._pos_2, "Quit") == 1) {
             return menu.MenuOptions.goto_main_menu;
         }
 

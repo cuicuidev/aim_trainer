@@ -6,7 +6,7 @@ const rg = @import("raygui");
 const scen = @import("scen/root.zig");
 const bot = @import("bot/root.zig");
 const menu = @import("menu/root.zig");
-const bm = @import("benchmark/benchmark.zig");
+const bm = @import("benchmark/root.zig");
 
 const SCREEN_WIDTH = 1920;
 const SCREEN_HEIGHT = 1080;
@@ -99,7 +99,7 @@ pub fn main() anyerror!void {
 
     // Menu prep
     var main_menu = menu.MainMenu.init(SCREEN_HEIGHT, SCREEN_WIDTH, "Aymalitcs");
-    var benchmark_menu = menu.BenchmarkMenu.init(SCREEN_HEIGHT, SCREEN_WIDTH, "Benchmark");
+    var benchmark_menu = menu.BenchmarkMenu.init(SCREEN_HEIGHT, SCREEN_WIDTH, "Benchmark", &benchmark);
     var _menu = main_menu.toMenu();
 
     // Main game loop
