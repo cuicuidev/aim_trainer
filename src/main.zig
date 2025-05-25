@@ -61,7 +61,7 @@ const Sensitivity = struct {
     }
 };
 
-pub fn main() anyerror!void {
+pub fn main() !void {
     var STATE = GameState.main_menu;
 
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -294,8 +294,10 @@ pub fn main() anyerror!void {
                     scenario.draw();
                 }
 
+                scenario.drawLineToClosestBot(&camera);
+
                 rl.drawFPS(SCREEN_WIDTH - 200, 40);
-                rl.drawCircle(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 2.5, rl.Color.black);
+                rl.drawCircle(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 3.0, rl.Color.black);
             },
             .quit => rl.closeWindow(),
             else => unreachable,

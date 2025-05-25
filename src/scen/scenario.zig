@@ -67,6 +67,48 @@ pub const Scenario = struct {
         }
     }
 
+    pub fn drawLineToClosestBot(self: *Self, camera_ptr: *rl.Camera3D) void {
+        if (self.bots.len == 0) return;
+
+        const screen_center = rl.Vector2.init(
+            @as(f32, @floatFromInt(rl.getScreenWidth())) / 2.0,
+            @as(f32, @floatFromInt(rl.getScreenHeight())) / 2.0,
+        );
+
+        const ray = rl.getScreenToWorldRay(screen_center, camera_ptr.*);
+
+        var closest_idx: usize = 0;
+        var closest_dist_sq: f32 = std.math.floatMax(f32);
+
+        var i: usize = 0;
+        while (i < self.bots.len) : (i += 1) {
+            const bot_pos = self.bots[i].geometry.getPosition();
+
+            const to_bot = rl.Vector3.subtract(bot_pos, ray.position);
+            const t = rl.Vector3.dotProduct(to_bot, ray.direction);
+            const closest_point_on_ray = rl.Vector3.add(ray.position, rl.Vector3.scale(ray.direction, t));
+
+            const diff = rl.Vector3.subtract(bot_pos, closest_point_on_ray);
+            const dist_sq = rl.Vector3.lengthSqr(diff);
+
+            if (dist_sq < closest_dist_sq) {
+                closest_dist_sq = dist_sq;
+                closest_idx = i;
+            }
+        }
+
+        const target_pos = self.bots[closest_idx].geometry.getPosition();
+        const target_screen_pos = rl.getWorldToScreen(target_pos, camera_ptr.*);
+
+        rl.drawLine(
+            @as(i32, @intFromFloat(screen_center.x)),
+            @as(i32, @intFromFloat(screen_center.y)),
+            @as(i32, @intFromFloat(target_screen_pos.x)),
+            @as(i32, @intFromFloat(target_screen_pos.y)),
+            rl.Color.sky_blue,
+        );
+    }
+
     pub fn kill(self: *Self, camera: *rl.Camera3D, lmb_pressed: bool, lmb_down: bool) void {
         switch (self.scenario_type) {
             .clicking => |*s| s.kill(self, camera, lmb_pressed, lmb_down),
