@@ -22,12 +22,14 @@ pub const RandomState = struct {
     }
 
     pub fn getState(self: *Self) RandomStateData {
+        std.debug.print("getState\ns[0] = {}\ns[1] = {}\ns[2] = {}\ns[3] = {}\n\n", .{ self.prng.s[0], self.prng.s[1], self.prng.s[2], self.prng.s[3] });
         return .{
             .s = self.prng.s,
         };
     }
 
     pub fn setState(self: *Self, state: RandomStateData) void {
+        std.debug.print("setState\ns[0] = {}\ns[1] = {}\ns[2] = {}\ns[3] = {}\n\n", .{ state.s[0], state.s[1], state.s[2], state.s[3] });
         self.prng.s = state.s;
     }
 };

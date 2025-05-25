@@ -69,7 +69,9 @@ pub fn main() anyerror!void {
 
     const allocator = gpa.allocator();
 
-    var random = rand.RandomState.init(0);
+    const time = std.time.timestamp();
+    const seed = @as(u64, @bitCast(time));
+    var random = rand.RandomState.init(seed);
 
     // Initialization
     const config_flags = rl.ConfigFlags{
@@ -96,13 +98,13 @@ pub fn main() anyerror!void {
     const sensitivity = Sensitivity.init(70.0, 1600.0);
 
     // Benchmark prep
+    var scenario: scen.Scenario = undefined;
+    var scenario_tape = tape.ScenarioTape.init(allocator, 144.0, &random);
+    defer scenario_tape.deinit();
 
     var benchmark = try bm.Benchmark.default(allocator, &random);
     defer benchmark.deinit();
 
-    var scenario: scen.Scenario = undefined;
-    var scenario_tape = tape.ScenarioTape.init(allocator, 144.0, &random);
-    defer scenario_tape.deinit();
     var time_elapsed: f32 = 0.0;
 
     // Menu prep
@@ -170,7 +172,6 @@ pub fn main() anyerror!void {
                         .projection = rl.CameraProjection.perspective,
                     };
                     scenario = benchmark.scenario();
-                    try scenario_tape.saveRandomStateToFile("tape_state");
                 }
 
                 // ---------------------------------------------------------------------------------------
@@ -186,8 +187,7 @@ pub fn main() anyerror!void {
                     benchmark.next();
                     STATE = GameState.benchmark_main_menu;
                     try scenario_tape.saveToFile("tape");
-                    scenario_tape.deinit();
-                    scenario_tape = tape.ScenarioTape.init(allocator, 144.0, &random);
+                    scenario_tape.reset();
                     time_elapsed = 0.0;
                     continue;
                 }
@@ -203,11 +203,14 @@ pub fn main() anyerror!void {
                 rl.updateCameraPro(&camera, movement, rotation, 0.0);
 
                 // Scenario events
-                scenario.kill(&camera);
+                const lmb_pressed = rl.isMouseButtonPressed(rl.MouseButton.left);
+                const lmb_down = rl.isMouseButtonDown(rl.MouseButton.left);
+                scenario.kill(&camera, lmb_pressed, lmb_down);
                 try scenario_tape.record(
                     delta_time,
                     mouse_delta,
-                    rl.isMouseButtonPressed(rl.MouseButton.left),
+                    lmb_pressed,
+                    lmb_down,
                 );
 
                 // -----------------------------------------------------------------------------------------
@@ -240,13 +243,12 @@ pub fn main() anyerror!void {
                         .fovy = 58.0,
                         .projection = rl.CameraProjection.perspective,
                     };
-                    scenario = benchmark.scenario();
-                    try scenario_tape.loadRandomStateFromFile("tape_state");
-                    try scenario_tape.loadFromFile("tape"); // Load previously recorded input
-                    scenario_tape.reset();
-                    time_elapsed = 0.0;
-                    random = rand.RandomState.init(0);
+                    benchmark.deinit();
+                    try scenario_tape.loadFromFile("tape");
                     random.setState(scenario_tape.initial_random_state);
+                    benchmark = try bm.Benchmark.default(allocator, &random);
+                    scenario = benchmark.scenario();
+                    time_elapsed = 0.0;
                 }
 
                 // ---------------------------------------------------------------------------------------
@@ -268,7 +270,7 @@ pub fn main() anyerror!void {
                     const movement = rl.Vector3.init(0.0, 0.0, 0.0);
                     rl.updateCameraPro(&camera, movement, rotation, 0.0);
 
-                    scenario.kill(&camera);
+                    scenario.kill(&camera, input.lmb_pressed, input.lmb_down);
                 }
 
                 if (time_elapsed >= scenario.duration_ms or scenario_tape.replay_index >= scenario_tape.frames.items.len) {

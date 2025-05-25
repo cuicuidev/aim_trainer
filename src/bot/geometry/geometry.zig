@@ -13,6 +13,13 @@ pub const Geometry = union(enum) {
 
     const Self = @This();
 
+    pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
+        switch (self.*) {
+            .sphere => |*g| g.deinit(allocator),
+            .capsule => |*g| g.deinit(allocator),
+        }
+    }
+
     pub fn hitScan(self: *Self, camera: *rl.Camera3D) ?rl.Vector3 {
         return switch (self.*) {
             .sphere => |*g| g.hitScan(camera),

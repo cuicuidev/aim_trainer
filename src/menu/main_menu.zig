@@ -39,7 +39,7 @@ pub const MainMenu = struct {
 
         const quit_trainer_rect = rl.Rectangle.init(
             (screen_width_f - button_width) / 2,
-            screen_height_f / 2 + button_height * 0.5,
+            screen_height_f / 2 + button_height,
             button_width,
             button_height,
         );

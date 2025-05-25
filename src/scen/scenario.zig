@@ -19,7 +19,7 @@ pub const Scenario = struct {
     bots: []bot.Bot,
     bot_config: bot.BotConfig,
     scenario_type: ScenarioType,
-    duration_ms: f32 = 10.0,
+    duration_ms: f32 = 30.0,
 
     const Self = @This();
 
@@ -43,6 +43,7 @@ pub const Scenario = struct {
     }
 
     pub fn deinit(self: *Self) void {
+        self.bot_config.geometry.deinit(self.allocator);
         self.allocator.free(self.bots);
     }
 
@@ -66,10 +67,10 @@ pub const Scenario = struct {
         }
     }
 
-    pub fn kill(self: *Self, camera: *rl.Camera3D) void {
+    pub fn kill(self: *Self, camera: *rl.Camera3D, lmb_pressed: bool, lmb_down: bool) void {
         switch (self.scenario_type) {
-            .clicking => |*s| s.kill(self, camera),
-            .tracking => |*s| s.kill(self, camera),
+            .clicking => |*s| s.kill(self, camera, lmb_pressed, lmb_down),
+            .tracking => |*s| s.kill(self, camera, lmb_pressed, lmb_down),
         }
     }
 
@@ -87,12 +88,14 @@ pub const Clicking = struct {
 
     const Self = @This();
 
-    pub fn kill(self: *Self, scenario: *Scenario, camera: *rl.Camera3D) void {
+    pub fn kill(self: *Self, scenario: *Scenario, camera: *rl.Camera3D, lmb_pressed: bool, lmb_down: bool) void {
         for (scenario.bots) |*b| {
             const delta = rl.getFrameTime();
             b.step(delta);
         }
-        if (rl.isMouseButtonPressed(rl.MouseButton.left)) {
+
+        _ = lmb_down;
+        if (lmb_pressed) {
             var i: usize = 0;
 
             while (i < scenario.bots.len) : (i += 1) {
@@ -125,12 +128,14 @@ pub const Tracking = struct {
 
     const Self = @This();
 
-    pub fn kill(self: *Self, scenario: *Scenario, camera: *rl.Camera3D) void {
+    pub fn kill(self: *Self, scenario: *Scenario, camera: *rl.Camera3D, lmb_pressed: bool, lmb_down: bool) void {
         for (scenario.bots) |*b| {
             const delta = rl.getFrameTime();
             b.step(delta);
         }
-        if (rl.isMouseButtonDown(rl.MouseButton.left)) {
+
+        _ = lmb_pressed;
+        if (lmb_down) {
             var i: usize = 0;
 
             while (i < scenario.bots.len) : (i += 1) {
