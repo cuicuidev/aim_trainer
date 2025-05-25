@@ -101,7 +101,7 @@ pub fn main() anyerror!void {
     defer benchmark.deinit();
 
     var scenario: scen.Scenario = undefined;
-    var scenario_tape = tape.ScenarioTape.init(allocator, 144.0);
+    var scenario_tape = tape.ScenarioTape.init(allocator, 144.0, &random);
     defer scenario_tape.deinit();
     var time_elapsed: f32 = 0.0;
 
@@ -170,6 +170,7 @@ pub fn main() anyerror!void {
                         .projection = rl.CameraProjection.perspective,
                     };
                     scenario = benchmark.scenario();
+                    try scenario_tape.saveRandomStateToFile("tape_state");
                 }
 
                 // ---------------------------------------------------------------------------------------
@@ -186,7 +187,7 @@ pub fn main() anyerror!void {
                     STATE = GameState.benchmark_main_menu;
                     try scenario_tape.saveToFile("tape");
                     scenario_tape.deinit();
-                    scenario_tape = tape.ScenarioTape.init(allocator, 144.0);
+                    scenario_tape = tape.ScenarioTape.init(allocator, 144.0, &random);
                     time_elapsed = 0.0;
                     continue;
                 }
@@ -240,9 +241,12 @@ pub fn main() anyerror!void {
                         .projection = rl.CameraProjection.perspective,
                     };
                     scenario = benchmark.scenario();
+                    try scenario_tape.loadRandomStateFromFile("tape_state");
                     try scenario_tape.loadFromFile("tape"); // Load previously recorded input
                     scenario_tape.reset();
                     time_elapsed = 0.0;
+                    random = rand.RandomState.init(0);
+                    random.setState(scenario_tape.initial_random_state);
                 }
 
                 // ---------------------------------------------------------------------------------------

@@ -1,6 +1,8 @@
 const std = @import("std");
 const rl = @import("raylib");
 
+const rand = @import("../rand/root.zig");
+
 pub const FrameInput = extern struct {
     frame_time: f32,
     mouse_delta: rl.Vector2,
@@ -9,6 +11,7 @@ pub const FrameInput = extern struct {
 
 pub const ScenarioTape = struct {
     allocator: std.mem.Allocator,
+    initial_random_state: rand.RandomStateData,
     frames: std.ArrayList(FrameInput),
     replay_index: usize = 0,
 
@@ -20,9 +23,10 @@ pub const ScenarioTape = struct {
 
     const Self = @This();
 
-    pub fn init(allocator: std.mem.Allocator, fps: f32) Self {
+    pub fn init(allocator: std.mem.Allocator, fps: f32, random_state_ptr: *rand.RandomState) Self {
         return .{
             .allocator = allocator,
+            .initial_random_state = random_state_ptr.getState(),
             .frames = std.ArrayList(FrameInput).init(allocator),
             .target_fps = fps,
         };
@@ -81,6 +85,13 @@ pub const ScenarioTape = struct {
         return null;
     }
 
+    pub fn saveRandomStateToFile(self: *Self, path: []const u8) !void {
+        var file = try std.fs.cwd().createFile(path, .{});
+        defer file.close();
+        var writer = file.writer();
+        try writer.writeStruct(self.initial_random_state);
+    }
+
     pub fn saveToFile(self: *Self, path: []const u8) !void {
         var file = try std.fs.cwd().createFile(path, .{});
         defer file.close();
@@ -88,6 +99,13 @@ pub const ScenarioTape = struct {
         for (self.frames.items) |frame| {
             try writer.writeStruct(frame);
         }
+    }
+
+    pub fn loadRandomStateFromFile(self: *Self, path: []const u8) !void {
+        var file = try std.fs.cwd().openFile(path, .{});
+        defer file.close();
+        const reader = file.reader();
+        self.initial_random_state = try reader.readStruct(rand.RandomStateData);
     }
 
     pub fn loadFromFile(self: *Self, path: []const u8) !void {
