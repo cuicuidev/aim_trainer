@@ -4,6 +4,7 @@ const rl = @import("raylib");
 
 const scen = @import("../scen/root.zig");
 const bot = @import("../bot/root.zig");
+const rand = @import("../rand/root.zig");
 
 pub const Benchmark = struct {
     allocator: std.mem.Allocator,
@@ -13,11 +14,16 @@ pub const Benchmark = struct {
 
     const Self = @This();
 
-    pub fn default(allocator: std.mem.Allocator) !Self {
+    pub fn default(allocator: std.mem.Allocator, random_state_ptr: *rand.RandomState) !Self {
         var scenarios = try allocator.alloc(scen.Scenario, 2);
         const scores = try allocator.alloc(f64, 2);
 
+        var modifiers_arr = try allocator.alloc(bot.mov.modifiers.MovementModule, 2);
+        var vel_constraints_arr = try allocator.alloc(bot.mov.constraints.VelocityConstraintModule, 2);
+        var acc_constraints_arr = try allocator.alloc(bot.mov.constraints.AccelConstraintModule, 1);
+
         const spawn_0 = scen.Spawn.init(
+            random_state_ptr,
             rl.Vector3.init(50.0, 2.0, 0.0),
             rl.Vector3.init(1.0, 0.0, 0.0),
             rl.Vector3.init(0.0, 0.0, 1.0),
@@ -49,7 +55,45 @@ pub const Benchmark = struct {
             },
         );
 
+        const sin_wander = bot.mov.modifiers.sinusoidal.SinusoidalWanderModifier{
+            .amplitude = 20.0,
+            .freq = 2.0,
+        };
+
+        const noise_wander = bot.mov.modifiers.noise.NoiseWanderModifier{
+            .strength = 3.0,
+            .random_state_ptr = random_state_ptr,
+        };
+
+        const min_speed = bot.mov.constraints.velocity.MinSpeedConstraint{ .min_speed = 12.0 };
+
+        const max_speed = bot.mov.constraints.velocity.MaxSpeedConstraint{ .max_speed = 20.0 };
+
+        const bias = bot.mov.constraints.acceleration.PointBiasConstraint{
+            .point = rl.Vector3.init(50.0, 2.0, 0.0),
+            .strength = 2.0,
+        };
+
+        modifiers_arr[0] = sin_wander.toModule(1.0);
+        modifiers_arr[1] = noise_wander.toModule(1.0);
+
+        vel_constraints_arr[0] = min_speed.toModule();
+        vel_constraints_arr[1] = max_speed.toModule();
+
+        acc_constraints_arr[0] = bias.toModule();
+
+        const KINETIC_CONFIG = bot.mov.kinetic.KineticConfig{
+            .constraints = bot.mov.constraints.Constraints{
+                .accel_constraints = acc_constraints_arr,
+                .velocity_constraints = vel_constraints_arr,
+            },
+            .modifiers = bot.mov.modifiers.MovementModifiers{
+                .modules = modifiers_arr,
+            },
+        };
+
         const spawn_1 = scen.Spawn.init(
+            random_state_ptr,
             rl.Vector3.init(50.0, 2.0, 0.0),
             rl.Vector3.init(1.0, 0.0, 0.0),
             rl.Vector3.init(0.0, 0.0, 1.0),
@@ -126,49 +170,3 @@ const STATIC_CONFIG = bot.mov.kinetic.KineticConfig{
 };
 
 // -----------------------------------------------------------------------------------------------
-
-const sin_wander = bot.mov.modifiers.sinusoidal.SinusoidalWanderModifier{
-    .amplitude = 20.0,
-    .freq = 2.0,
-};
-
-const noise_wander = bot.mov.modifiers.noise.NoiseWanderModifier{
-    .strength = 3.0,
-};
-
-const min_speed = bot.mov.constraints.velocity.MinSpeedConstraint{ .min_speed = 12.0 };
-
-const max_speed = bot.mov.constraints.velocity.MaxSpeedConstraint{ .max_speed = 20.0 };
-
-const bias = bot.mov.constraints.acceleration.PointBiasConstraint{
-    .point = rl.Vector3.init(50.0, 2.0, 0.0),
-    .strength = 2.0,
-};
-
-const modifiers_arr = [2]bot.mov.modifiers.MovementModule{
-    sin_wander.toModule(1.0),
-    noise_wander.toModule(1.0),
-};
-
-const modifiers = bot.mov.modifiers.MovementModifiers{
-    .modules = &modifiers_arr,
-};
-
-const vel_constraints_arr = [2]bot.mov.constraints.VelocityConstraintModule{
-    min_speed.toModule(),
-    max_speed.toModule(),
-};
-
-const acc_constraints_arr = [1]bot.mov.constraints.AccelConstraintModule{
-    bias.toModule(),
-};
-
-const constraints = bot.mov.constraints.Constraints{
-    .accel_constraints = &acc_constraints_arr,
-    .velocity_constraints = &vel_constraints_arr,
-};
-
-const KINETIC_CONFIG = bot.mov.kinetic.KineticConfig{
-    .constraints = constraints,
-    .modifiers = modifiers,
-};

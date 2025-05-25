@@ -8,6 +8,7 @@ const bot = @import("bot/root.zig");
 const menu = @import("menu/root.zig");
 const bm = @import("benchmark/root.zig");
 const tape = @import("tape/root.zig");
+const rand = @import("rand/root.zig");
 
 const SCREEN_WIDTH = 1920;
 const SCREEN_HEIGHT = 1080;
@@ -68,6 +69,8 @@ pub fn main() anyerror!void {
 
     const allocator = gpa.allocator();
 
+    var random = rand.RandomState.init(0);
+
     // Initialization
     const config_flags = rl.ConfigFlags{
         .fullscreen_mode = true,
@@ -93,8 +96,8 @@ pub fn main() anyerror!void {
     const sensitivity = Sensitivity.init(70.0, 1600.0);
 
     // Benchmark prep
-    rl.setRandomSeed(0);
-    var benchmark = try bm.Benchmark.default(allocator);
+
+    var benchmark = try bm.Benchmark.default(allocator, &random);
     defer benchmark.deinit();
 
     var scenario: scen.Scenario = undefined;
