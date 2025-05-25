@@ -1,3 +1,5 @@
+const std = @import("std");
+
 const rl = @import("raylib");
 const rg = @import("raygui");
 
@@ -5,6 +7,7 @@ const menu = @import("menu.zig");
 
 pub const MainMenu = struct {
     _goto_benchmark_rect: rl.Rectangle,
+    _replay_scenario_rect: rl.Rectangle,
     _quit_trainer_rect: rl.Rectangle,
     _title: [:0]const u8,
     _font_size: i32 = 200,
@@ -27,6 +30,13 @@ pub const MainMenu = struct {
             button_height,
         );
 
+        const replay_scenario_rect = rl.Rectangle.init(
+            (screen_width_f - button_width) / 2,
+            screen_height_f / 2 - button_height * 0.25,
+            button_width,
+            button_height,
+        );
+
         const quit_trainer_rect = rl.Rectangle.init(
             (screen_width_f - button_width) / 2,
             screen_height_f / 2 + button_height * 0.5,
@@ -36,6 +46,7 @@ pub const MainMenu = struct {
 
         return .{
             ._goto_benchmark_rect = goto_benchmark_rect,
+            ._replay_scenario_rect = replay_scenario_rect,
             ._quit_trainer_rect = quit_trainer_rect,
             ._title = title,
             ._screen_width = screen_width,
@@ -56,6 +67,11 @@ pub const MainMenu = struct {
 
         if (rg.guiButton(self._goto_benchmark_rect, "Benchmark") == 1) {
             return menu.MenuOptions.goto_benchmark_menu;
+        }
+
+        if (rg.guiButton(self._replay_scenario_rect, "Replay") == 1) {
+            std.debug.print("Replay\n", .{});
+            return menu.MenuOptions.replay_scenario;
         }
 
         if (rg.guiButton(self._quit_trainer_rect, "Quit") == 1) {

@@ -24,6 +24,7 @@ pub const MenuOptions = enum {
     next_scenario,
     repeat_scenario,
     prev_scenario,
+    replay_scenario,
 
     quit_trainer,
 };

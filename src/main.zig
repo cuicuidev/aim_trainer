@@ -7,6 +7,7 @@ const scen = @import("scen/root.zig");
 const bot = @import("bot/root.zig");
 const menu = @import("menu/root.zig");
 const bm = @import("benchmark/root.zig");
+const tape = @import("tape/root.zig");
 
 const SCREEN_WIDTH = 1920;
 const SCREEN_HEIGHT = 1080;
@@ -18,6 +19,7 @@ pub const GameState = enum {
     benchmark_results_menu,
     scenario_selection_menu,
     scenario_gameplay,
+    scenario_replay,
     quit,
 };
 
@@ -91,10 +93,13 @@ pub fn main() anyerror!void {
     const sensitivity = Sensitivity.init(70.0, 1600.0);
 
     // Benchmark prep
+    rl.setRandomSeed(0);
     var benchmark = try bm.Benchmark.default(allocator);
     defer benchmark.deinit();
 
     var scenario: scen.Scenario = undefined;
+    var scenario_tape = tape.ScenarioTape.init(allocator, 144.0);
+    defer scenario_tape.deinit();
     var time_elapsed: f32 = 0.0;
 
     // Menu prep
@@ -120,6 +125,7 @@ pub fn main() anyerror!void {
                             STATE = GameState.benchmark_main_menu;
                             _menu = benchmark_menu.toMenu();
                         },
+                        .replay_scenario => STATE = GameState.scenario_replay,
                         .quit_trainer => STATE = GameState.quit,
                         else => unreachable,
                     }
@@ -167,13 +173,17 @@ pub fn main() anyerror!void {
                 // UPDATE --------------------------------------------------------------------------------
                 // ---------------------------------------------------------------------------------------
 
-                time_elapsed += rl.getFrameTime();
+                const delta_time = rl.getFrameTime();
+                time_elapsed += delta_time;
 
                 if (time_elapsed >= scenario.duration_ms) {
                     const score = scenario.getScore();
                     benchmark.setScore(score);
                     benchmark.next();
                     STATE = GameState.benchmark_main_menu;
+                    try scenario_tape.saveToFile("tape");
+                    scenario_tape.deinit();
+                    scenario_tape = tape.ScenarioTape.init(allocator, 144.0);
                     time_elapsed = 0.0;
                     continue;
                 }
@@ -190,6 +200,11 @@ pub fn main() anyerror!void {
 
                 // Scenario events
                 scenario.kill(&camera);
+                try scenario_tape.record(
+                    delta_time,
+                    mouse_delta,
+                    rl.isMouseButtonPressed(rl.MouseButton.left),
+                );
 
                 // -----------------------------------------------------------------------------------------
                 // RENDER ----------------------------------------------------------------------------------
@@ -208,6 +223,68 @@ pub fn main() anyerror!void {
                 }
 
                 // 2D RENDER -------------------------------------------------------------------------------
+                rl.drawFPS(SCREEN_WIDTH - 200, 40);
+                rl.drawCircle(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 2.5, rl.Color.black);
+            },
+            .scenario_replay => {
+                if (!rl.isCursorHidden()) {
+                    rl.disableCursor();
+                    camera = rl.Camera3D{
+                        .position = rl.Vector3.init(0.0, 2.0, 0.0),
+                        .target = rl.Vector3.init(10.0, 2.0, 0.0),
+                        .up = rl.Vector3.init(0.0, 1.0, 0.0),
+                        .fovy = 58.0,
+                        .projection = rl.CameraProjection.perspective,
+                    };
+                    scenario = benchmark.scenario();
+                    try scenario_tape.loadFromFile("tape"); // Load previously recorded input
+                    scenario_tape.reset();
+                    time_elapsed = 0.0;
+                }
+
+                // ---------------------------------------------------------------------------------------
+                // UPDATE --------------------------------------------------------------------------------
+                // ---------------------------------------------------------------------------------------
+
+                const delta_time = rl.getFrameTime();
+                time_elapsed += delta_time;
+
+                // Frame stepping based on recorded frame_time
+                const frame = scenario_tape.advanceAndGetFrame(delta_time);
+
+                if (frame) |input| {
+                    const rotation = rl.Vector3.init(
+                        input.mouse_delta.x * sensitivity.value,
+                        input.mouse_delta.y * sensitivity.value,
+                        0.0,
+                    );
+                    const movement = rl.Vector3.init(0.0, 0.0, 0.0);
+                    rl.updateCameraPro(&camera, movement, rotation, 0.0);
+
+                    scenario.kill(&camera);
+                }
+
+                if (time_elapsed >= scenario.duration_ms or scenario_tape.replay_index >= scenario_tape.frames.items.len) {
+                    STATE = GameState.main_menu;
+                    scenario_tape.reset(); // optional: clean up
+                    time_elapsed = 0.0;
+                    continue;
+                }
+
+                // -----------------------------------------------------------------------------------------
+                // RENDER ----------------------------------------------------------------------------------
+                // -----------------------------------------------------------------------------------------
+
+                rl.beginDrawing();
+                defer rl.endDrawing();
+                rl.clearBackground(rl.Color.dark_gray);
+
+                {
+                    rl.beginMode3D(camera);
+                    defer rl.endMode3D();
+                    scenario.draw();
+                }
+
                 rl.drawFPS(SCREEN_WIDTH - 200, 40);
                 rl.drawCircle(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 2.5, rl.Color.black);
             },
