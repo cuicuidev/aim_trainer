@@ -19,7 +19,7 @@ pub const Scenario = struct {
     bots: []bot.Bot,
     bot_config: bot.BotConfig,
     scenario_type: ScenarioType,
-    duration_ms: f32 = 30.0,
+    duration_ms: f32 = 10.0,
 
     const Self = @This();
 

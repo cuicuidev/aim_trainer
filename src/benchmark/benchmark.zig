@@ -8,7 +8,7 @@ const rand = @import("../rand/root.zig");
 
 pub const Benchmark = struct {
     allocator: std.mem.Allocator,
-    scenarios: []const scen.Scenario,
+    scenarios: []scen.Scenario,
     scores: []f64,
     at: usize,
 
@@ -18,7 +18,7 @@ pub const Benchmark = struct {
         var scenarios = try allocator.alloc(scen.Scenario, 2);
         const scores = try allocator.alloc(f64, 2);
 
-        var modifiers_arr = try allocator.alloc(bot.mov.modifiers.MovementModule, 2);
+        var modifiers_arr = try allocator.alloc(bot.mov.modifiers.MovementModule, 1);
         var vel_constraints_arr = try allocator.alloc(bot.mov.constraints.VelocityConstraintModule, 2);
         var acc_constraints_arr = try allocator.alloc(bot.mov.constraints.AccelConstraintModule, 1);
 
@@ -60,10 +60,11 @@ pub const Benchmark = struct {
             .freq = 2.0,
         };
 
-        const noise_wander = bot.mov.modifiers.noise.NoiseWanderModifier{
-            .strength = 3.0,
-            .random_state_ptr = random_state_ptr,
-        };
+        // TODO: FIX RANDOMSTATE SEGFAULT
+        // const noise_wander = bot.mov.modifiers.noise.NoiseWanderModifier{
+        //     .strength = 3.0,
+        //     .random_state_ptr = random_state_ptr,
+        // };
 
         const min_speed = bot.mov.constraints.velocity.MinSpeedConstraint{ .min_speed = 12.0 };
 
@@ -75,7 +76,7 @@ pub const Benchmark = struct {
         };
 
         modifiers_arr[0] = sin_wander.toModule(1.0);
-        modifiers_arr[1] = noise_wander.toModule(1.0);
+        // modifiers_arr[1] = noise_wander.toModule(1.0);
 
         vel_constraints_arr[0] = min_speed.toModule();
         vel_constraints_arr[1] = max_speed.toModule();
@@ -135,6 +136,8 @@ pub const Benchmark = struct {
     }
 
     pub fn deinit(self: *Self) void {
+        std.debug.print("benchmark.deinit() called\n", .{});
+
         for (self.scenarios) |*s| {
             @constCast(s).deinit();
         }
@@ -150,8 +153,8 @@ pub const Benchmark = struct {
         self.scores[self.at] = score;
     }
 
-    pub fn scenario(self: *Self) scen.Scenario {
-        return self.scenarios[self.at];
+    pub fn scenario(self: *Self) *scen.Scenario {
+        return &self.scenarios[self.at];
     }
 
     pub fn reset(self: *Self) void {

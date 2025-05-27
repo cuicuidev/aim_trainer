@@ -52,6 +52,8 @@ pub fn main() !void {
 
     rl.setExitKey(rl.KeyboardKey.null);
 
+    // rl.setTargetFPS(60);
+
     // Game config initialization
     const sensitivity = config.Sensitivity.init(70.0, 1600.0);
 
@@ -74,7 +76,7 @@ pub fn main() !void {
     var benchmark = try bm.Benchmark.default(allocator, &random);
     defer benchmark.deinit();
 
-    var scenario: scen.Scenario = undefined;
+    var scenario_ptr: *scen.Scenario = undefined;
 
     // Game menu initialization
     var main_menu = menu.MainMenu.init(SCREEN_HEIGHT, SCREEN_WIDTH, "Aimalytics");
@@ -137,18 +139,18 @@ pub fn main() !void {
                 if (!rl.isCursorHidden()) {
                     rl.disableCursor();
                     camera = getCamera();
-                    scenario = benchmark.scenario();
+                    scenario_ptr = benchmark.scenario();
                 }
 
                 // Scenario end update
                 const delta_time = rl.getFrameTime();
                 time_elapsed += delta_time;
 
-                if (time_elapsed >= scenario.duration_ms) {
+                if (time_elapsed >= scenario_ptr.duration_ms) {
                     STATE = GameState.benchmark_main_menu;
                     time_elapsed = 0.0;
 
-                    benchmark.setScore(scenario.getScore());
+                    benchmark.setScore(scenario_ptr.getScore());
                     benchmark.next();
 
                     try scenario_tape.saveToFile("tape");
@@ -172,7 +174,7 @@ pub fn main() !void {
                 const lmb_pressed = rl.isMouseButtonPressed(rl.MouseButton.left);
                 const lmb_down = rl.isMouseButtonDown(rl.MouseButton.left);
 
-                scenario.kill(&camera, lmb_pressed, lmb_down);
+                scenario_ptr.kill(&camera, lmb_pressed, lmb_down);
 
                 try scenario_tape.record(
                     delta_time,
@@ -191,7 +193,7 @@ pub fn main() !void {
                     rl.beginMode3D(camera);
                     defer rl.endMode3D();
 
-                    scenario.draw();
+                    scenario_ptr.draw();
                     crosshair.drawCenter(&camera);
                 }
 
@@ -211,7 +213,7 @@ pub fn main() !void {
                     random.setState(scenario_tape.initial_random_state);
                     benchmark = try bm.Benchmark.default(allocator, &random);
 
-                    scenario = benchmark.scenario();
+                    scenario_ptr = benchmark.scenario();
                 }
 
                 // Update at a set FPS
@@ -230,11 +232,11 @@ pub fn main() !void {
                     rl.updateCameraPro(&camera, movement, rotation, 0.0);
 
                     crosshair.updateTrail(&camera);
-                    scenario.kill(&camera, input.lmb_pressed, input.lmb_down);
+                    scenario_ptr.kill(&camera, input.lmb_pressed, input.lmb_down);
                 }
 
                 // Scenario end update
-                if (time_elapsed >= scenario.duration_ms or scenario_tape.replay_index >= scenario_tape.frames.items.len) {
+                if (time_elapsed >= scenario_ptr.duration_ms or scenario_tape.replay_index >= scenario_tape.frames.items.len) {
                     STATE = GameState.main_menu;
                     time_elapsed = 0.0;
 
@@ -252,13 +254,13 @@ pub fn main() !void {
                     rl.beginMode3D(camera);
                     defer rl.endMode3D();
 
-                    scenario.draw();
+                    scenario_ptr.draw();
                     crosshair.drawTrail();
                     crosshair.drawCenter(&camera);
                 }
 
                 // 2D
-                scenario.drawLineToClosestBot(&camera);
+                scenario_ptr.drawLineToClosestBot(&camera);
 
                 rl.drawFPS(SCREEN_WIDTH - 200, 40);
             },
@@ -307,16 +309,9 @@ pub const Crosshair = struct {
 
     const Self = @This();
 
-    pub fn init(
-        allocator: std.mem.Allocator,
-        size: f32,
-        color: rl.Color,
-        // _half_screen_width: i32, // Unused for 3D crosshair, but kept to match call signature
-        // _half_screen_height: i32, // Unused for 3D crosshair
-    ) !Self {
+    pub fn init(allocator: std.mem.Allocator, size: f32, color: rl.Color) !Self {
         const points = try allocator.alloc(rl.Vector3, TRAIL_CAPACITY);
-        // Initialize points to zero. drawTrail checks trail_count, so uninitialized data isn't read immediately.
-        // Zeroing is safer for long-term use of the circular buffer.
+
         for (points) |*pt| {
             pt.* = rl.Vector3.zero();
         }

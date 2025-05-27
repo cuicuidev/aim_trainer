@@ -41,6 +41,7 @@ pub const ScenarioTape = struct {
     pub fn reset(self: *Self) void {
         self.replay_index = 0;
         self.time_accumulator = 0.0;
+        self.frames.clearRetainingCapacity();
     }
 
     pub fn setState(self: *Self, random_state_ptr: rand.RandomState) void {
