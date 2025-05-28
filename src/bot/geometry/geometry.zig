@@ -62,4 +62,25 @@ pub const Geometry = union(enum) {
             },
         }
     }
+
+    pub fn getRadius(self: *Self) f32 {
+        return switch (self.*) {
+            .sphere => |*g| return g.radius,
+            .capsule => |*g| return g.radius,
+        };
+    }
+
+    pub fn getHeight(self: *Self) ?f32 {
+        return switch (self.*) {
+            .sphere => return null,
+            .capsule => |*g| return g.radius,
+        };
+    }
+
+    pub fn getKineticHandler(self: *Self) mov.kinetic.KineticHandler {
+        return switch (self.*) {
+            .sphere => |*g| return g.kinetic_handler,
+            .capsule => |*g| return g.kinetic_handler,
+        };
+    }
 };

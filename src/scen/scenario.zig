@@ -8,29 +8,61 @@ const bot = @import("../bot/root.zig");
 const geo = bot.geo;
 const mov = bot.mov;
 
+const tape = @import("tape.zig");
+
 pub const ScenarioType = union(enum) {
     clicking: Clicking,
     tracking: Tracking,
 };
 
 pub const Scenario = struct {
+    // Base
     allocator: std.mem.Allocator,
+    name: []const u8,
+    scenario_tape: tape.ScenarioTape,
+
+    // Environment
     spawn: sp.Spawn,
-    bots: []bot.Bot,
-    bot_config: bot.BotConfig,
+
+    // Configuration
     scenario_type: ScenarioType,
-    duration_ms: f32 = 10.0,
+    bot_config: bot.BotConfig,
+    duration_ms: f32,
+
+    // Variables
+    bots: []bot.Bot,
 
     const Self = @This();
 
-    pub fn init(allocator: std.mem.Allocator, spawn: sp.Spawn, bot_config: bot.BotConfig, scenario_type: ScenarioType) !Self {
-        const bots = try allocator.alloc(bot.Bot, bot_config.n_bots);
+    pub fn init(
+        allocator: std.mem.Allocator,
+        name: []const u8,
+        spawn: sp.Spawn,
+        scenario_type: ScenarioType,
+        bot_config: bot.BotConfig,
+        duration_ms: f32,
+        prng_ptr: *std.Random.Xoshiro256,
+    ) !Self {
+        const bots = try allocator.alloc(
+            bot.Bot,
+            bot_config.n_bots,
+        );
+
+        const scenario_tape = tape.ScenarioTape.init(
+            allocator,
+            144.0,
+            prng_ptr.s,
+        );
+
         var self = Self{
             .allocator = allocator,
+            .name = name,
+            .scenario_tape = scenario_tape,
             .spawn = spawn,
-            .bots = bots,
-            .bot_config = bot_config,
             .scenario_type = scenario_type,
+            .bot_config = bot_config,
+            .duration_ms = duration_ms,
+            .bots = bots,
         };
 
         var i: usize = 0;
@@ -45,6 +77,7 @@ pub const Scenario = struct {
     pub fn deinit(self: *Self) void {
         self.bot_config.geometry.deinit(self.allocator);
         self.allocator.free(self.bots);
+        self.scenario_tape.deinit();
     }
 
     fn spawnBot(self: *Self, idx: usize) void {
@@ -56,8 +89,18 @@ pub const Scenario = struct {
     }
 
     fn randomizeBotPosition(self: *Self, idx: usize) void {
-        const pos = self.spawn.getRandomPosition();
+        const pos = self.spawn.getRandomPosition(&self.scenario_tape.prng);
         self.bots[idx].geometry.setPosition(pos);
+    }
+
+    pub fn loadTape(self: *Self) !void {
+        const path = try std.fmt.allocPrint(self.allocator, "{s}.tape", .{self.name});
+        defer self.allocator.free(path);
+        self.scenario_tape = try tape.ScenarioTape.loadFromFile(self.allocator, path);
+        var i: usize = 0;
+        while (i < self.bot_config.n_bots) : (i += 1) {
+            self.spawnBot(i);
+        }
     }
 
     pub fn draw(self: *Self) void {
@@ -67,7 +110,7 @@ pub const Scenario = struct {
         }
     }
 
-    pub fn drawLineToClosestBot(self: *Self, camera_ptr: *rl.Camera3D) void {
+    pub fn drawLineToClosestBot(self: *Self, camera_ptr: *rl.Camera3D, color: rl.Color) void {
         if (self.bots.len == 0) return;
 
         const screen_center = rl.Vector2.init(
@@ -105,7 +148,7 @@ pub const Scenario = struct {
             @as(i32, @intFromFloat(screen_center.y)),
             @as(i32, @intFromFloat(target_screen_pos.x)),
             @as(i32, @intFromFloat(target_screen_pos.y)),
-            rl.Color.sky_blue,
+            color,
         );
     }
 

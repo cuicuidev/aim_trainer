@@ -7,8 +7,6 @@ const scen = @import("scen/root.zig");
 const bot = @import("bot/root.zig");
 const menu = @import("menu/root.zig");
 const bm = @import("benchmark/root.zig");
-const tape = @import("tape/root.zig");
-const rand = @import("rand/root.zig");
 const config = @import("config/root.zig");
 
 pub const GameState = enum {
@@ -28,7 +26,7 @@ pub fn main() !void {
     // PRNG
     const time = std.time.timestamp();
     const seed = @as(u64, @bitCast(time));
-    var random = rand.RandomState.init(seed);
+    var prng = std.Random.Xoshiro256.init(seed);
 
     // Raylib window initialization
     const dims = getMainMonitorDimensions();
@@ -68,12 +66,8 @@ pub fn main() !void {
     );
     defer crosshair.deinit();
 
-    // Replay system initialization
-    var scenario_tape = tape.ScenarioTape.init(allocator, 144.0, &random);
-    defer scenario_tape.deinit();
-
     // Game scenarios initialization
-    var benchmark = try bm.Benchmark.default(allocator, &random);
+    var benchmark = try bm.Benchmark.default(allocator, &prng);
     defer benchmark.deinit();
 
     var scenario_ptr: *scen.Scenario = undefined;
@@ -139,7 +133,7 @@ pub fn main() !void {
                 if (!rl.isCursorHidden()) {
                     rl.disableCursor();
                     camera = getCamera();
-                    scenario_ptr = benchmark.scenario();
+                    scenario_ptr = benchmark.nextScenario();
                 }
 
                 // Scenario end update
@@ -150,11 +144,16 @@ pub fn main() !void {
                     STATE = GameState.benchmark_main_menu;
                     time_elapsed = 0.0;
 
-                    benchmark.setScore(scenario_ptr.getScore());
-                    benchmark.next();
+                    // benchmark.setScore(scenario_ptr.getScore());
 
-                    try scenario_tape.saveToFile("tape");
-                    scenario_tape.reset();
+                    const scen_name = scenario_ptr.name;
+                    try scenario_ptr.scenario_tape.saveToFile(scen_name);
+
+                    if (benchmark.at == benchmark.scenarios.len) {
+                        continue;
+                    }
+
+                    scenario_ptr = benchmark.nextScenario();
                     continue;
                 }
 
@@ -176,7 +175,7 @@ pub fn main() !void {
 
                 scenario_ptr.kill(&camera, lmb_pressed, lmb_down);
 
-                try scenario_tape.record(
+                try scenario_ptr.scenario_tape.record(
                     delta_time,
                     mouse_delta,
                     lmb_pressed,
@@ -205,22 +204,16 @@ pub fn main() !void {
                 if (!rl.isCursorHidden()) {
                     rl.disableCursor();
 
-                    // TODO: tape must hold the scenario too, so benchmark deinit is not necesary.
                     camera = getCamera();
 
-                    benchmark.deinit();
-                    try scenario_tape.loadFromFile("tape");
-                    random.setState(scenario_tape.initial_random_state);
-                    benchmark = try bm.Benchmark.default(allocator, &random);
-
-                    scenario_ptr = benchmark.scenario();
+                    try scenario_ptr.loadTape();
                 }
 
                 // Update at a set FPS
                 const delta_time = rl.getFrameTime();
                 time_elapsed += delta_time;
 
-                const frame = scenario_tape.advanceAndGetFrame(delta_time);
+                const frame = scenario_ptr.scenario_tape.nextFrame(delta_time);
 
                 if (frame) |input| {
                     const rotation = rl.Vector3.init(
@@ -236,11 +229,9 @@ pub fn main() !void {
                 }
 
                 // Scenario end update
-                if (time_elapsed >= scenario_ptr.duration_ms or scenario_tape.replay_index >= scenario_tape.frames.items.len) {
+                if (time_elapsed >= scenario_ptr.duration_ms or scenario_ptr.scenario_tape.replay_index >= scenario_ptr.scenario_tape.frames.items.len) {
                     STATE = GameState.main_menu;
                     time_elapsed = 0.0;
-
-                    scenario_tape.reset();
                     continue;
                 }
 
@@ -260,7 +251,7 @@ pub fn main() !void {
                 }
 
                 // 2D
-                scenario_ptr.drawLineToClosestBot(&camera);
+                scenario_ptr.drawLineToClosestBot(&camera, rl.Color.sky_blue);
 
                 rl.drawFPS(SCREEN_WIDTH - 200, 40);
             },

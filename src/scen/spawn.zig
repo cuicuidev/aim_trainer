@@ -3,10 +3,8 @@ const std = @import("std");
 const rl = @import("raylib");
 
 const bot = @import("../bot/root.zig");
-const rand = @import("../rand/root.zig");
 
 pub const Spawn = struct {
-    random_state_ptr: *rand.RandomState,
     origin: rl.Vector3,
     right: rl.Vector3, // local X-axis (width direction)
     up: rl.Vector3, // local Y-axis (height direction)
@@ -17,13 +15,12 @@ pub const Spawn = struct {
 
     const Self = @This();
 
-    pub fn init(random_state_ptr: *rand.RandomState, origin: rl.Vector3, forward: rl.Vector3, right: rl.Vector3, up: rl.Vector3, width: f32, height: f32, depth: f32) Self {
+    pub fn init(origin: rl.Vector3, forward: rl.Vector3, right: rl.Vector3, up: rl.Vector3, width: f32, height: f32, depth: f32) Self {
         const forward_norm = rl.Vector3.normalize(forward);
         const right_norm = rl.Vector3.normalize(right);
         const up_norm = rl.Vector3.normalize(up);
 
         return .{
-            .random_state_ptr = random_state_ptr,
             .origin = origin,
             .right = right_norm,
             .up = up_norm,
@@ -70,10 +67,10 @@ pub const Spawn = struct {
         }
     }
 
-    pub fn getRandomPosition(self: *Self) rl.Vector3 {
-        const rand_x = self.random_state_ptr.getRange(-1, 1) * (self.width / 2.0);
-        const rand_y = self.random_state_ptr.getRange(-1, 1) * (self.height / 2.0);
-        const rand_z = self.random_state_ptr.getRange(-1, 1) * (self.depth / 2.0);
+    pub fn getRandomPosition(self: *Self, prng_ptr: *std.Random.Xoshiro256) rl.Vector3 {
+        const rand_x = (prng_ptr.random().float(f32) * 2 - 1) * (self.width / 2.0);
+        const rand_y = (prng_ptr.random().float(f32) * 2 - 1) * (self.height / 2.0);
+        const rand_z = (prng_ptr.random().float(f32) * 2 - 1) * (self.depth / 2.0);
 
         const offset_right = rl.Vector3.scale(self.right, rand_x);
         const offset_up = rl.Vector3.scale(self.up, rand_y);

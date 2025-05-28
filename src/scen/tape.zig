@@ -1,8 +1,6 @@
 const std = @import("std");
 const rl = @import("raylib");
 
-const rand = @import("../rand/root.zig");
-
 pub const FrameInput = extern struct {
     frame_time: f32,
     mouse_delta: rl.Vector2,
@@ -11,44 +9,55 @@ pub const FrameInput = extern struct {
 };
 
 pub const ScenarioTape = struct {
+    // Base
     allocator: std.mem.Allocator,
-    initial_random_state: rand.RandomStateData,
+    prng: std.Random.Xoshiro256,
+    target_fps: f32,
+
+    // Variables
     frames: std.ArrayList(FrameInput),
     replay_index: usize = 0,
 
-    target_fps: f32 = 144.0,
+    // FPS adjustment
     time_accumulator: f32 = 0.0,
-
     accumulated_mouse_delta: rl.Vector2 = rl.Vector2.init(0.0, 0.0),
     accumulated_lmb_pressed: bool = false,
     accumulated_lmb_down: bool = false,
 
     const Self = @This();
 
-    pub fn init(allocator: std.mem.Allocator, fps: f32, random_state_ptr: *rand.RandomState) Self {
-        return .{
+    pub fn init(
+        allocator: std.mem.Allocator,
+        target_fps: f32,
+        random_state: [4]u64,
+    ) Self {
+        var self = Self{
             .allocator = allocator,
-            .initial_random_state = random_state_ptr.getState(),
+            .prng = std.Random.Xoshiro256.init(0),
+            .target_fps = target_fps,
             .frames = std.ArrayList(FrameInput).init(allocator),
-            .target_fps = fps,
         };
+
+        self.prng.s = random_state;
+
+        return self;
     }
 
     pub fn deinit(self: *Self) void {
         self.frames.deinit();
     }
 
-    pub fn reset(self: *Self) void {
-        self.replay_index = 0;
-        self.time_accumulator = 0.0;
-        self.frames.clearRetainingCapacity();
+    pub fn setRandomState(self: *Self, random_state: [4]u64) void {
+        self.prng.s = random_state;
     }
 
-    pub fn setState(self: *Self, random_state_ptr: rand.RandomState) void {
-        self.initial_random_state = random_state_ptr.getState();
-    }
-
-    pub fn record(self: *Self, delta_time: f32, mouse_delta: rl.Vector2, lmb_pressed: bool, lmb_down: bool) !void {
+    pub fn record(
+        self: *Self,
+        delta_time: f32,
+        mouse_delta: rl.Vector2,
+        lmb_pressed: bool,
+        lmb_down: bool,
+    ) !void {
         self.time_accumulator += delta_time;
         self.accumulated_mouse_delta.x += mouse_delta.x;
         self.accumulated_mouse_delta.y += mouse_delta.y;
@@ -80,7 +89,7 @@ pub const ScenarioTape = struct {
         }
     }
 
-    pub fn advanceAndGetFrame(self: *Self, delta_time: f32) ?FrameInput {
+    pub fn nextFrame(self: *Self, delta_time: f32) ?FrameInput {
         self.time_accumulator += delta_time;
 
         while (self.replay_index < self.frames.items.len) {
@@ -98,13 +107,23 @@ pub const ScenarioTape = struct {
         return null;
     }
 
-    pub fn saveToFile(self: *Self, path: []const u8) !void {
+    pub fn saveToFile(self: *Self, scenario_name: []const u8) !void {
+        const path = try std.fmt.allocPrint(
+            self.allocator,
+            "{s}.tape",
+            .{scenario_name},
+        );
+        defer self.allocator.free(path);
+
         var file = try std.fs.cwd().createFile(path, .{});
         defer file.close();
         var writer = file.writer();
 
         // Write the random state first
-        try writer.writeStruct(self.initial_random_state);
+        const random_state = self.prng.s;
+        for (0..3) |i| {
+            try writer.writeInt(u64, random_state[i], std.builtin.Endian.little);
+        }
 
         // Write each frame input
         for (self.frames.items) |frame| {
@@ -112,17 +131,22 @@ pub const ScenarioTape = struct {
         }
     }
 
-    pub fn loadFromFile(self: *Self, path: []const u8) !void {
+    pub fn loadFromFile(allocator: std.mem.Allocator, path: []const u8) !Self {
         var file = try std.fs.cwd().openFile(path, .{});
         defer file.close();
         const reader = file.reader();
 
-        self.frames.deinit();
-        self.frames = std.ArrayList(FrameInput).init(self.allocator);
-        self.replay_index = 0;
+        var self = Self{
+            .allocator = allocator,
+            .prng = std.Random.Xoshiro256.init(0),
+            .target_fps = 144.0,
+            .frames = std.ArrayList(FrameInput).init(allocator),
+        };
 
         // Read the random state
-        self.initial_random_state = try reader.readStruct(rand.RandomStateData);
+        for (0..3) |i| {
+            self.prng.s[i] = try reader.readInt(u64, std.builtin.Endian.little);
+        }
 
         // Read all frames until EOF
         while (true) {
@@ -130,5 +154,7 @@ pub const ScenarioTape = struct {
             if (read == error.EndOfStream) break;
             try self.frames.append(try read);
         }
+
+        return self;
     }
 };
