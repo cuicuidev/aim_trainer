@@ -12,6 +12,7 @@ pub const ScenarioTape = struct {
     // Base
     allocator: std.mem.Allocator,
     prng: std.Random.Xoshiro256,
+    initial_random_state: [4]u64,
     target_fps: f32,
 
     // Variables
@@ -34,6 +35,7 @@ pub const ScenarioTape = struct {
         var self = Self{
             .allocator = allocator,
             .prng = std.Random.Xoshiro256.init(0),
+            .initial_random_state = random_state,
             .target_fps = target_fps,
             .frames = std.ArrayList(FrameInput).init(allocator),
         };
@@ -120,9 +122,14 @@ pub const ScenarioTape = struct {
         var writer = file.writer();
 
         // Write the random state first
-        const random_state = self.prng.s;
-        for (0..3) |i| {
-            try writer.writeInt(u64, random_state[i], std.builtin.Endian.little);
+
+        std.debug.print("ScenarioTape.saveToFile | s[0] = {}\n", .{self.initial_random_state[0]});
+        std.debug.print("ScenarioTape.saveToFile | s[1] = {}\n", .{self.initial_random_state[1]});
+        std.debug.print("ScenarioTape.saveToFile | s[2] = {}\n", .{self.initial_random_state[2]});
+        std.debug.print("ScenarioTape.saveToFile | s[3] = {}\n\n", .{self.initial_random_state[3]});
+
+        for (0..4) |i| {
+            try writer.writeInt(u64, self.initial_random_state[i], std.builtin.Endian.little);
         }
 
         // Write each frame input
@@ -139,14 +146,22 @@ pub const ScenarioTape = struct {
         var self = Self{
             .allocator = allocator,
             .prng = std.Random.Xoshiro256.init(0),
+            .initial_random_state = .{undefined} ** 4,
             .target_fps = 144.0,
             .frames = std.ArrayList(FrameInput).init(allocator),
         };
 
         // Read the random state
-        for (0..3) |i| {
-            self.prng.s[i] = try reader.readInt(u64, std.builtin.Endian.little);
+        for (0..4) |i| {
+            self.initial_random_state[i] = try reader.readInt(u64, std.builtin.Endian.little);
         }
+
+        self.prng.s = self.initial_random_state;
+
+        std.debug.print("ScenarioTape.loadFromFile | s[0] = {}\n", .{self.prng.s[0]});
+        std.debug.print("ScenarioTape.loadFromFile | s[1] = {}\n", .{self.prng.s[1]});
+        std.debug.print("ScenarioTape.loadFromFile | s[2] = {}\n", .{self.prng.s[2]});
+        std.debug.print("ScenarioTape.loadFromFile | s[3] = {}\n\n", .{self.prng.s[3]});
 
         // Read all frames until EOF
         while (true) {

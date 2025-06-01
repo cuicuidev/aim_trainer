@@ -67,10 +67,15 @@ pub fn main() !void {
     defer crosshair.deinit();
 
     // Game scenarios initialization
+    // TODO: Decouple Benchmark and Scenario structs. Scenario must be used independently from Benchmark,
+    // while Benchmark should allow easy scenario initialization when several Scenario in a row are needed.
+    // Maybe Benchmark is a bad idea and we could just have a lookup table to store scenario_name and
+    // Scenario key-value pairs. That would make it easier to build a menu to select any scenario to play or
+    // to watch the replay. The Benchmark struct could just consist of a series of ordered keys.
     var benchmark = try bm.Benchmark.default(allocator, &prng);
     defer benchmark.deinit();
 
-    var scenario_ptr: *scen.Scenario = undefined;
+    var scenario_ptr: *scen.Scenario = benchmark.nextScenario();
 
     // Game menu initialization
     var main_menu = menu.MainMenu.init(SCREEN_HEIGHT, SCREEN_WIDTH, "Aimalytics");
@@ -133,7 +138,7 @@ pub fn main() !void {
                 if (!rl.isCursorHidden()) {
                     rl.disableCursor();
                     camera = getCamera();
-                    scenario_ptr = benchmark.nextScenario();
+                    // scenario_ptr = benchmark.nextScenario();
                 }
 
                 // Scenario end update

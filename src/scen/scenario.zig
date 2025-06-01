@@ -48,6 +48,11 @@ pub const Scenario = struct {
             bot_config.n_bots,
         );
 
+        std.debug.print("Scenario.init | s[0] = {}\n", .{prng_ptr.s[0]});
+        std.debug.print("Scenario.init | s[1] = {}\n", .{prng_ptr.s[1]});
+        std.debug.print("Scenario.init | s[2] = {}\n", .{prng_ptr.s[2]});
+        std.debug.print("Scenario.init | s[3] = {}\n\n", .{prng_ptr.s[3]});
+
         const scenario_tape = tape.ScenarioTape.init(
             allocator,
             144.0,
@@ -96,6 +101,7 @@ pub const Scenario = struct {
     pub fn loadTape(self: *Self) !void {
         const path = try std.fmt.allocPrint(self.allocator, "{s}.tape", .{self.name});
         defer self.allocator.free(path);
+        self.scenario_tape.deinit();
         self.scenario_tape = try tape.ScenarioTape.loadFromFile(self.allocator, path);
         var i: usize = 0;
         while (i < self.bot_config.n_bots) : (i += 1) {
