@@ -38,6 +38,15 @@ pub const Benchmark = struct {
         self.scores[self.at] = score;
     }
 
+    pub fn getScenario(self: *Self, name: []const u8) !scen.Scenario {
+        const scenario = try scen.Scenario.fromConfig(
+            self.allocator,
+            self.scenario_lookup.get(name).?,
+            self.prng_ptr,
+        );
+        return scenario;
+    }
+
     pub fn nextScenario(self: *Self) !scen.Scenario {
         const scenario = try scen.Scenario.fromConfig(
             self.allocator,

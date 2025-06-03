@@ -76,7 +76,7 @@ pub fn main() !void {
     defer benchmark.deinit();
 
     var scenario: scen.Scenario = undefined;
-    defer scenario.deinit();
+    errdefer scenario.deinit();
 
     // Game menu initialization
     var main_menu = menu.MainMenu.init(SCREEN_HEIGHT, SCREEN_WIDTH, "Aimalytics");
@@ -153,9 +153,8 @@ pub fn main() !void {
                     const scen_name = scenario.name;
                     try scenario.scenario_tape.saveToFile(scen_name);
 
-                    if (benchmark.at == benchmark.scenario_lookup.scenario_configs.len) {
-                        continue;
-                    }
+                    scenario.deinit();
+
                     continue;
                 }
 
@@ -208,6 +207,7 @@ pub fn main() !void {
 
                     camera = getCamera();
 
+                    scenario = try benchmark.getScenario("ww2ts");
                     try scenario.loadTape();
                 }
 
@@ -234,6 +234,8 @@ pub fn main() !void {
                 if (time_elapsed >= scenario.duration_ms or scenario.scenario_tape.replay_index >= scenario.scenario_tape.frames.items.len) {
                     STATE = GameState.main_menu;
                     time_elapsed = 0.0;
+
+                    scenario.deinit();
                     continue;
                 }
 
