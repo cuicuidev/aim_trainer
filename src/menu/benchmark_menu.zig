@@ -61,7 +61,7 @@ pub const BenchmarkMenu = struct {
             if (rg.guiButton(self._pos_1, "Start") == 1) {
                 return menu.MenuOptions.next_scenario;
             }
-        } else if (self._benchmark_ptr.scenarios.len != self._benchmark_ptr.at) {
+        } else if (self._benchmark_ptr.scenario_lookup.scenario_configs.len != self._benchmark_ptr.at) {
             if (rg.guiButton(self._pos_1, "Next") == 1) {
                 return menu.MenuOptions.next_scenario;
             }

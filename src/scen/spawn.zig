@@ -4,6 +4,16 @@ const rl = @import("raylib");
 
 const bot = @import("../bot/root.zig");
 
+pub const SpawnConfig = struct {
+    origin: [3]f32,
+    right: [3]f32,
+    up: [3]f32,
+    forward: [3]f32,
+    width: f32,
+    height: f32,
+    depth: f32,
+};
+
 pub const Spawn = struct {
     origin: rl.Vector3,
     right: rl.Vector3, // local X-axis (width direction)
@@ -29,6 +39,23 @@ pub const Spawn = struct {
             .height = height,
             .depth = depth,
         };
+    }
+
+    pub fn fromConfig(spawn_config: SpawnConfig) Self {
+        const origin = rl.Vector3.init(spawn_config.origin[0], spawn_config.origin[1], spawn_config.origin[2]);
+        const forward = rl.Vector3.init(spawn_config.forward[0], spawn_config.forward[1], spawn_config.forward[2]);
+        const right = rl.Vector3.init(spawn_config.right[0], spawn_config.right[1], spawn_config.right[2]);
+        const up = rl.Vector3.init(spawn_config.up[0], spawn_config.up[1], spawn_config.up[2]);
+
+        return Self.init(
+            origin,
+            forward,
+            right,
+            up,
+            spawn_config.width,
+            spawn_config.height,
+            spawn_config.depth,
+        );
     }
 
     pub fn draw(self: *const Self, color: rl.Color) void {

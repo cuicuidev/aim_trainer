@@ -75,7 +75,8 @@ pub fn main() !void {
     var benchmark = try bm.Benchmark.default(allocator, &prng);
     defer benchmark.deinit();
 
-    var scenario_ptr: *scen.Scenario = benchmark.nextScenario();
+    var scenario: scen.Scenario = undefined;
+    defer scenario.deinit();
 
     // Game menu initialization
     var main_menu = menu.MainMenu.init(SCREEN_HEIGHT, SCREEN_WIDTH, "Aimalytics");
@@ -121,9 +122,9 @@ pub fn main() !void {
                     switch (option) {
                         .next_scenario => STATE = GameState.scenario_gameplay,
                         .goto_main_menu => {
-                            for (benchmark.scores) |score| {
-                                std.debug.print("{d}\n", .{score});
-                            }
+                            // for (benchmark.scores) |score| {
+                            //     std.debug.print("{d}\n", .{score});
+                            // }
 
                             STATE = GameState.main_menu;
                             benchmark.reset();
@@ -138,27 +139,23 @@ pub fn main() !void {
                 if (!rl.isCursorHidden()) {
                     rl.disableCursor();
                     camera = getCamera();
-                    // scenario_ptr = benchmark.nextScenario();
+                    scenario = try benchmark.nextScenario();
                 }
 
                 // Scenario end update
                 const delta_time = rl.getFrameTime();
                 time_elapsed += delta_time;
 
-                if (time_elapsed >= scenario_ptr.duration_ms) {
+                if (time_elapsed >= scenario.duration_ms) {
                     STATE = GameState.benchmark_main_menu;
                     time_elapsed = 0.0;
 
-                    // benchmark.setScore(scenario_ptr.getScore());
+                    const scen_name = scenario.name;
+                    try scenario.scenario_tape.saveToFile(scen_name);
 
-                    const scen_name = scenario_ptr.name;
-                    try scenario_ptr.scenario_tape.saveToFile(scen_name);
-
-                    if (benchmark.at == benchmark.scenarios.len) {
+                    if (benchmark.at == benchmark.scenario_lookup.scenario_configs.len) {
                         continue;
                     }
-
-                    scenario_ptr = benchmark.nextScenario();
                     continue;
                 }
 
@@ -178,9 +175,9 @@ pub fn main() !void {
                 const lmb_pressed = rl.isMouseButtonPressed(rl.MouseButton.left);
                 const lmb_down = rl.isMouseButtonDown(rl.MouseButton.left);
 
-                scenario_ptr.kill(&camera, lmb_pressed, lmb_down);
+                scenario.kill(&camera, lmb_pressed, lmb_down);
 
-                try scenario_ptr.scenario_tape.record(
+                try scenario.scenario_tape.record(
                     delta_time,
                     mouse_delta,
                     lmb_pressed,
@@ -197,7 +194,7 @@ pub fn main() !void {
                     rl.beginMode3D(camera);
                     defer rl.endMode3D();
 
-                    scenario_ptr.draw();
+                    scenario.draw();
                     crosshair.drawCenter(&camera);
                 }
 
@@ -211,14 +208,14 @@ pub fn main() !void {
 
                     camera = getCamera();
 
-                    try scenario_ptr.loadTape();
+                    try scenario.loadTape();
                 }
 
                 // Update at a set FPS
                 const delta_time = rl.getFrameTime();
                 time_elapsed += delta_time;
 
-                const frame = scenario_ptr.scenario_tape.nextFrame(delta_time);
+                const frame = scenario.scenario_tape.nextFrame(delta_time);
 
                 if (frame) |input| {
                     const rotation = rl.Vector3.init(
@@ -230,11 +227,11 @@ pub fn main() !void {
                     rl.updateCameraPro(&camera, movement, rotation, 0.0);
 
                     crosshair.updateTrail(&camera);
-                    scenario_ptr.kill(&camera, input.lmb_pressed, input.lmb_down);
+                    scenario.kill(&camera, input.lmb_pressed, input.lmb_down);
                 }
 
                 // Scenario end update
-                if (time_elapsed >= scenario_ptr.duration_ms or scenario_ptr.scenario_tape.replay_index >= scenario_ptr.scenario_tape.frames.items.len) {
+                if (time_elapsed >= scenario.duration_ms or scenario.scenario_tape.replay_index >= scenario.scenario_tape.frames.items.len) {
                     STATE = GameState.main_menu;
                     time_elapsed = 0.0;
                     continue;
@@ -250,13 +247,13 @@ pub fn main() !void {
                     rl.beginMode3D(camera);
                     defer rl.endMode3D();
 
-                    scenario_ptr.draw();
+                    scenario.draw();
                     crosshair.drawTrail();
                     crosshair.drawCenter(&camera);
                 }
 
                 // 2D
-                scenario_ptr.drawLineToClosestBot(&camera, rl.Color.sky_blue);
+                scenario.drawLineToClosestBot(&camera, rl.Color.sky_blue);
 
                 rl.drawFPS(SCREEN_WIDTH - 200, 40);
             },

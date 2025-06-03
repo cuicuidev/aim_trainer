@@ -15,6 +15,14 @@ pub const ScenarioType = union(enum) {
     tracking: Tracking,
 };
 
+pub const ScenarioConfig = struct {
+    name: []const u8,
+    bot_config: bot.BotConfig,
+    spawn: sp.Spawn,
+    duration: f32,
+    scenario_type: ScenarioType,
+};
+
 pub const Scenario = struct {
     // Base
     allocator: std.mem.Allocator,
@@ -77,6 +85,18 @@ pub const Scenario = struct {
         }
 
         return self;
+    }
+
+    pub fn fromConfig(allocator: std.mem.Allocator, config: ScenarioConfig, prng_ptr: *std.Random.Xoshiro256) !Self {
+        return try Self.init(
+            allocator,
+            config.name,
+            config.spawn,
+            config.scenario_type,
+            config.bot_config,
+            config.duration,
+            prng_ptr,
+        );
     }
 
     pub fn deinit(self: *Self) void {
