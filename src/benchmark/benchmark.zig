@@ -7,18 +7,16 @@ const bot = @import("../bot/root.zig");
 
 pub const Benchmark = struct {
     allocator: std.mem.Allocator,
-    prng_ptr: *std.Random.Xoshiro256,
     scenario_lookup: scen.ScenarioLookup,
     at: usize,
 
     const Self = @This();
 
-    pub fn default(allocator: std.mem.Allocator, prng_ptr: *std.Random.Xoshiro256) !Self {
+    pub fn default(allocator: std.mem.Allocator) !Self {
         const scenario_lookup = try scen.ScenarioLookup.init(allocator, 3);
 
         return .{
             .allocator = allocator,
-            .prng_ptr = prng_ptr,
             .scenario_lookup = scenario_lookup,
             .at = 0,
         };
@@ -42,7 +40,6 @@ pub const Benchmark = struct {
         const scenario = try scen.Scenario.fromConfig(
             self.allocator,
             self.scenario_lookup.get(name).?,
-            self.prng_ptr,
         );
         return scenario;
     }
@@ -51,7 +48,6 @@ pub const Benchmark = struct {
         const scenario = try scen.Scenario.fromConfig(
             self.allocator,
             self.scenario_lookup.scenario_configs[self.at],
-            self.prng_ptr,
         );
         self.next();
         return scenario;

@@ -49,22 +49,25 @@ pub const Scenario = struct {
         scenario_type: ScenarioType,
         bot_config: bot.BotConfig,
         duration_ms: f32,
-        prng_ptr: *std.Random.Xoshiro256,
     ) !Self {
+        const time = std.time.timestamp();
+        const seed = @as(u64, @bitCast(time));
+        const prng = std.Random.Xoshiro256.init(seed);
+
         const bots = try allocator.alloc(
             bot.Bot,
             bot_config.n_bots,
         );
 
-        std.debug.print("Scenario.init | s[0] = {}\n", .{prng_ptr.s[0]});
-        std.debug.print("Scenario.init | s[1] = {}\n", .{prng_ptr.s[1]});
-        std.debug.print("Scenario.init | s[2] = {}\n", .{prng_ptr.s[2]});
-        std.debug.print("Scenario.init | s[3] = {}\n\n", .{prng_ptr.s[3]});
+        std.debug.print("Scenario.init | s[0] = {}\n", .{prng.s[0]});
+        std.debug.print("Scenario.init | s[1] = {}\n", .{prng.s[1]});
+        std.debug.print("Scenario.init | s[2] = {}\n", .{prng.s[2]});
+        std.debug.print("Scenario.init | s[3] = {}\n\n", .{prng.s[3]});
 
         const scenario_tape = tape.ScenarioTape.init(
             allocator,
             144.0,
-            prng_ptr.s,
+            prng.s,
         );
 
         var self = Self{
@@ -87,7 +90,7 @@ pub const Scenario = struct {
         return self;
     }
 
-    pub fn fromConfig(allocator: std.mem.Allocator, config: ScenarioConfig, prng_ptr: *std.Random.Xoshiro256) !Self {
+    pub fn fromConfig(allocator: std.mem.Allocator, config: ScenarioConfig) !Self {
         return try Self.init(
             allocator,
             config.name,
@@ -95,7 +98,6 @@ pub const Scenario = struct {
             config.scenario_type,
             config.bot_config,
             config.duration,
-            prng_ptr,
         );
     }
 

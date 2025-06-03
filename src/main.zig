@@ -23,11 +23,6 @@ pub fn main() !void {
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
-    // PRNG
-    const time = std.time.timestamp();
-    const seed = @as(u64, @bitCast(time));
-    var prng = std.Random.Xoshiro256.init(seed);
-
     // Raylib window initialization
     const dims = getMainMonitorDimensions();
     const SCREEN_WIDTH = dims[0];
@@ -72,7 +67,7 @@ pub fn main() !void {
     // Maybe Benchmark is a bad idea and we could just have a lookup table to store scenario_name and
     // Scenario key-value pairs. That would make it easier to build a menu to select any scenario to play or
     // to watch the replay. The Benchmark struct could just consist of a series of ordered keys.
-    var benchmark = try bm.Benchmark.default(allocator, &prng);
+    var benchmark = try bm.Benchmark.default(allocator);
     defer benchmark.deinit();
 
     var scenario: scen.Scenario = undefined;
@@ -207,7 +202,7 @@ pub fn main() !void {
 
                     camera = getCamera();
 
-                    scenario = try benchmark.getScenario("ww2ts");
+                    scenario = try benchmark.getScenario("ww4ts");
                     try scenario.loadTape();
                 }
 

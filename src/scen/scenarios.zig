@@ -59,7 +59,7 @@ pub const ScenarioLookup = struct {
             .spawn = spawn,
             .duration = 10.0,
             .scenario_type = scen.ScenarioType{ .clicking = scen.Clicking{} },
-            .name = "ww2ts",
+            .name = "ww3ts",
         };
 
         const wide_wall_4_targets_small_conf = scen.ScenarioConfig{
@@ -78,7 +78,7 @@ pub const ScenarioLookup = struct {
             .spawn = spawn,
             .duration = 10.0,
             .scenario_type = scen.ScenarioType{ .clicking = scen.Clicking{} },
-            .name = "ww2ts",
+            .name = "ww4ts",
         };
 
         var config = try allocator.alloc(scen.ScenarioConfig, size);
