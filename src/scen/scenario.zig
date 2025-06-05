@@ -180,10 +180,10 @@ pub const Scenario = struct {
         );
     }
 
-    pub fn kill(self: *Self, camera: *rl.Camera3D, lmb_pressed: bool, lmb_down: bool) void {
+    pub fn kill(self: *Self, camera: *rl.Camera3D, lmb_pressed: bool, lmb_down: bool, dt: f32) void {
         switch (self.scenario_type) {
-            .clicking => |*s| s.kill(self, camera, lmb_pressed, lmb_down),
-            .tracking => |*s| s.kill(self, camera, lmb_pressed, lmb_down),
+            .clicking => |*s| s.kill(self, camera, lmb_pressed, lmb_down, dt),
+            .tracking => |*s| s.kill(self, camera, lmb_pressed, lmb_down, dt),
         }
     }
 
@@ -201,10 +201,9 @@ pub const Clicking = struct {
 
     const Self = @This();
 
-    pub fn kill(self: *Self, scenario: *Scenario, camera: *rl.Camera3D, lmb_pressed: bool, lmb_down: bool) void {
+    pub fn kill(self: *Self, scenario: *Scenario, camera: *rl.Camera3D, lmb_pressed: bool, lmb_down: bool, dt: f32) void {
         for (scenario.bots) |*b| {
-            const delta = rl.getFrameTime();
-            b.step(delta);
+            b.step(dt);
         }
 
         _ = lmb_down;
@@ -241,10 +240,9 @@ pub const Tracking = struct {
 
     const Self = @This();
 
-    pub fn kill(self: *Self, scenario: *Scenario, camera: *rl.Camera3D, lmb_pressed: bool, lmb_down: bool) void {
+    pub fn kill(self: *Self, scenario: *Scenario, camera: *rl.Camera3D, lmb_pressed: bool, lmb_down: bool, dt: f32) void {
         for (scenario.bots) |*b| {
-            const delta = rl.getFrameTime();
-            b.step(delta);
+            b.step(dt);
         }
 
         _ = lmb_pressed;
