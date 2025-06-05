@@ -202,7 +202,7 @@ pub fn main() !void {
 
                     camera = getCamera();
 
-                    scenario = try benchmark.getScenario("ww4ts");
+                    scenario = try benchmark.getScenario("controlsphere");
                     try scenario.loadTape();
                 }
 
