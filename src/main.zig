@@ -156,6 +156,7 @@ pub fn main() !void {
                         .goto_main_menu => {
                             STATE = GameState.main_menu;
                             benchmark.reset();
+                            _menu = main_menu.toMenu();
                         },
                         .replay_scenario => {
                             STATE = GameState.scenario_replay;
@@ -268,7 +269,7 @@ pub fn main() !void {
                     time_elapsed = 0.0;
 
                     scenario.deinit();
-                    _menu = main_menu.toMenu();
+                    _menu = replay_menu.toMenu();
                     continue;
                 }
 
