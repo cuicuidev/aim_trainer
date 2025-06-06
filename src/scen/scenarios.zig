@@ -43,43 +43,43 @@ pub const ScenarioLookup = struct {
             .name = "ww2ts",
         };
 
-        // const wide_wall_3_targets_small_conf = scen.ScenarioConfig{
-        //     .bot_config = bot.BotConfig{
-        //         .n_bots = 3,
-        //         .bot_initial_position = null,
-        //         .geometry = bot.Geometry{
-        //             .sphere = bot.geo.Sphere.init(
-        //                 spawn.origin,
-        //                 0.3,
-        //                 rl.Color.red,
-        //                 STATIC_CONFIG,
-        //             ),
-        //         },
-        //     },
-        //     .spawn = spawn,
-        //     .duration = 10.0,
-        //     .scenario_type = scen.ScenarioType{ .clicking = scen.Clicking{} },
-        //     .name = "ww3ts",
-        // };
+        const wide_wall_3_targets_small_conf = scen.ScenarioConfig{
+            .bot_config = bot.BotConfig{
+                .n_bots = 3,
+                .bot_initial_position = null,
+                .geometry = bot.Geometry{
+                    .sphere = bot.geo.Sphere.init(
+                        spawn.origin,
+                        0.3,
+                        rl.Color.red,
+                        STATIC_CONFIG,
+                    ),
+                },
+            },
+            .spawn = spawn,
+            .duration = 10.0,
+            .scenario_type = scen.ScenarioType{ .clicking = scen.Clicking{} },
+            .name = "ww3ts",
+        };
 
-        // const wide_wall_4_targets_small_conf = scen.ScenarioConfig{
-        //     .bot_config = bot.BotConfig{
-        //         .n_bots = 4,
-        //         .bot_initial_position = null,
-        //         .geometry = bot.Geometry{
-        //             .sphere = bot.geo.Sphere.init(
-        //                 spawn.origin,
-        //                 0.3,
-        //                 rl.Color.red,
-        //                 STATIC_CONFIG,
-        //             ),
-        //         },
-        //     },
-        //     .spawn = spawn,
-        //     .duration = 10.0,
-        //     .scenario_type = scen.ScenarioType{ .clicking = scen.Clicking{} },
-        //     .name = "ww4ts",
-        // };
+        const wide_wall_4_targets_small_conf = scen.ScenarioConfig{
+            .bot_config = bot.BotConfig{
+                .n_bots = 4,
+                .bot_initial_position = null,
+                .geometry = bot.Geometry{
+                    .sphere = bot.geo.Sphere.init(
+                        spawn.origin,
+                        0.3,
+                        rl.Color.red,
+                        STATIC_CONFIG,
+                    ),
+                },
+            },
+            .spawn = spawn,
+            .duration = 10.0,
+            .scenario_type = scen.ScenarioType{ .clicking = scen.Clicking{} },
+            .name = "ww4ts",
+        };
 
         // Tracking
         const controlsphere = scen.ScenarioConfig{
@@ -104,8 +104,8 @@ pub const ScenarioLookup = struct {
 
         var config = try allocator.alloc(scen.ScenarioConfig, size);
         config[0] = wide_wall_2_targets_small_conf;
-        // config[1] = wide_wall_3_targets_small_conf;
-        // config[2] = wide_wall_4_targets_small_conf;
+        config[1] = wide_wall_3_targets_small_conf;
+        config[2] = wide_wall_4_targets_small_conf;
         config[1] = controlsphere;
         return .{
             .allocator = allocator,

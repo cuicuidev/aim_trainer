@@ -13,7 +13,7 @@ pub const Benchmark = struct {
     const Self = @This();
 
     pub fn default(allocator: std.mem.Allocator) !Self {
-        const scenario_lookup = try scen.ScenarioLookup.init(allocator, 2);
+        const scenario_lookup = try scen.ScenarioLookup.init(allocator, 4);
 
         return .{
             .allocator = allocator,
