@@ -29,17 +29,6 @@ pub const Capsule = struct {
     pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
         _ = self;
         _ = allocator;
-        // if (self.kinetic_handler.config.constraints.accel_constraints) |*accel_constraints| {
-        //     allocator.free(accel_constraints.*);
-        // }
-
-        // if (self.kinetic_handler.config.constraints.velocity_constraints) |*vel_constraints| {
-        //     allocator.free(vel_constraints.*);
-        // }
-
-        // if (self.kinetic_handler.config.modifiers.modules) |*modules| {
-        //     allocator.free(modules.*);
-        // }
     }
 
     pub fn hitScan(self: *Self, camera: *rl.Camera3D) ?rl.Vector3 {
