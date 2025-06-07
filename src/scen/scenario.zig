@@ -182,8 +182,8 @@ pub const Scenario = struct {
 
     pub fn kill(self: *Self, camera: *rl.Camera3D, lmb_pressed: bool, lmb_down: bool, dt: f32) void {
         switch (self.scenario_type) {
-            .clicking => |*s| s.kill(self, camera, lmb_pressed, lmb_down, dt),
-            .tracking => |*s| s.kill(self, camera, lmb_pressed, lmb_down, dt),
+            .clicking => |*s| s.kill(self, camera, lmb_pressed, lmb_down, dt, &self.scenario_tape.prng),
+            .tracking => |*s| s.kill(self, camera, lmb_pressed, lmb_down, dt, &self.scenario_tape.prng),
         }
     }
 
@@ -201,9 +201,9 @@ pub const Clicking = struct {
 
     const Self = @This();
 
-    pub fn kill(self: *Self, scenario: *Scenario, camera: *rl.Camera3D, lmb_pressed: bool, lmb_down: bool, dt: f32) void {
+    pub fn kill(self: *Self, scenario: *Scenario, camera: *rl.Camera3D, lmb_pressed: bool, lmb_down: bool, dt: f32, prng_ptr: *std.Random.Xoshiro256) void {
         for (scenario.bots) |*b| {
-            b.step(dt);
+            b.step(dt, prng_ptr);
         }
 
         _ = lmb_down;
@@ -240,9 +240,9 @@ pub const Tracking = struct {
 
     const Self = @This();
 
-    pub fn kill(self: *Self, scenario: *Scenario, camera: *rl.Camera3D, lmb_pressed: bool, lmb_down: bool, dt: f32) void {
+    pub fn kill(self: *Self, scenario: *Scenario, camera: *rl.Camera3D, lmb_pressed: bool, lmb_down: bool, dt: f32, prng_ptr: *std.Random.Xoshiro256) void {
         for (scenario.bots) |*b| {
-            b.step(dt);
+            b.step(dt, prng_ptr);
         }
 
         _ = lmb_pressed;

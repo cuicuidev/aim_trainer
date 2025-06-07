@@ -1,3 +1,5 @@
+const std = @import("std");
+
 const rl = @import("raylib");
 
 const m = @import("modifiers.zig");
@@ -6,7 +8,8 @@ pub const SinusoidalWanderModifier = struct {
     amplitude: f32,
     freq: f32,
 
-    pub fn apply(ctx: *const anyopaque, time: f32) rl.Vector3 {
+    pub fn apply(ctx: *const anyopaque, time: f32, prng_ptr: *std.Random.Xoshiro256) rl.Vector3 {
+        _ = prng_ptr;
         const self = @as(*const SinusoidalWanderModifier, @ptrCast(@alignCast(ctx)));
         return sinusoidalWander(time, self.amplitude, self.freq);
     }

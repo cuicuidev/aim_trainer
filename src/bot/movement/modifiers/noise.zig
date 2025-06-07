@@ -5,13 +5,12 @@ const rl = @import("raylib");
 const m = @import("modifiers.zig");
 
 pub const NoiseWanderModifier = struct {
-    prng_ptr: *std.Random.Xoshiro256,
     strength: f32,
 
-    pub fn apply(ctx: *const anyopaque, dt: f32) rl.Vector3 {
+    pub fn apply(ctx: *const anyopaque, dt: f32, prng_ptr: *std.Random.Xoshiro256) rl.Vector3 {
         _ = dt;
         const self = @as(*const NoiseWanderModifier, @ptrCast(@alignCast(ctx)));
-        return noiseWander(self.strength, self.prng_ptr);
+        return noiseWander(self.strength, prng_ptr);
     }
 
     pub fn toModule(self: *const NoiseWanderModifier, weight: f32) m.MovementModule {

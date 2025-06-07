@@ -97,7 +97,7 @@ pub const ScenarioLookup = struct {
                 },
             },
             .spawn = spawn,
-            .duration = 10.0,
+            .duration = 60.0,
             .scenario_type = scen.ScenarioType{ .tracking = scen.Tracking{} },
             .name = "controlsphere",
         };
@@ -127,11 +127,10 @@ pub const ScenarioLookup = struct {
     }
 };
 
-// TODO: FIX RANDOMSTATE SEGFAULT
-// const noise_wander = bot.mov.modifiers.noise.NoiseWanderModifier{
-//     .strength = 3.0,
-//     .random_state_ptr = random_state_ptr,
-// };
+// TODO: FIX RANDOM UPDATES
+const noise_wander = bot.mov.modifiers.noise.NoiseWanderModifier{
+    .strength = 10.0,
+};
 
 const sin_wander = bot.mov.modifiers.sinusoidal.SinusoidalWanderModifier{
     .amplitude = 20.0,
@@ -144,12 +143,12 @@ const max_speed = bot.mov.constraints.velocity.MaxSpeedConstraint{ .max_speed = 
 
 const bias = bot.mov.constraints.acceleration.PointBiasConstraint{
     .point = rl.Vector3.init(50.0, 2.0, 0.0),
-    .strength = 2.0,
+    .strength = 1.0,
 };
 
-var modifiers_arr: [1]bot.mov.modifiers.MovementModule = .{
+var modifiers_arr: [2]bot.mov.modifiers.MovementModule = .{
     sin_wander.toModule(1.0),
-    // noise_wander.toModule(1.0),
+    noise_wander.toModule(5.0),
 };
 var vel_constraints_arr: [2]bot.mov.constraints.VelocityConstraintModule = .{
     min_speed.toModule(),

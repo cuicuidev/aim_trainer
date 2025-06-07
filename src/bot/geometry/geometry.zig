@@ -34,13 +34,13 @@ pub const Geometry = union(enum) {
         }
     }
 
-    pub fn kineticHandlerStep(self: *Self, dt: f32) void {
+    pub fn kineticHandlerStep(self: *Self, dt: f32, prng_ptr: *std.Random.Xoshiro256) void {
         switch (self.*) {
             .sphere => |*g| {
-                g.position = g.kinetic_handler.step(g.position, dt);
+                g.position = g.kinetic_handler.step(g.position, dt, prng_ptr);
             },
             .capsule => |*g| {
-                g.position = g.kinetic_handler.step(g.position, dt);
+                g.position = g.kinetic_handler.step(g.position, dt, prng_ptr);
             },
         }
     }
