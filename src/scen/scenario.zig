@@ -282,7 +282,17 @@ pub const Tracking = struct {
         _ = self;
 
         for (scenario.bots, frame_data.bots.positions) |*b, pos| {
+            // const bot_initial_pos = b.*.geometry.getPosition();
             b.*.setPosition(pos);
+            // const bot_new_pos = b.*.geometry.getPosition();
+            // std.debug.print("change bots from {}, {}, {} to {}, {}, {}\n", .{
+            //     bot_initial_pos.x,
+            //     bot_initial_pos.y,
+            //     bot_initial_pos.z,
+            //     bot_new_pos.x,
+            //     bot_new_pos.y,
+            //     bot_new_pos.z,
+            // });
         }
     }
 
