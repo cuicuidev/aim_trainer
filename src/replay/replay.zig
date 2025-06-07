@@ -119,22 +119,24 @@ pub const ReplayTape = struct {
     pub fn nextFrame(self: *Self, dt: f32) ?FrameData {
         self._playback_time += dt;
 
-        while (self._at < self.frames.items.len) {
-            const frame = self.frames.items[self._at];
-
-            // Sum of all previous frame times up to this frame
-            const total_time: f32 = self.frames.items[self._at].playback_time;
-
-            // If the playback time has caught up with or surpassed this frame
-            if (self._playback_time >= total_time) {
-                self._at += 1;
-                return frame;
-            } else {
-                return null; // Not yet time for this frame
+        const len = self.frames.items.len;
+        while (self._at < len) {
+            // Find the furthest frame we can jump to whose playback time <= current time
+            var i = self._at;
+            while ((i + 1) < len and self.frames.items[i + 1].playback_time <= self._playback_time) {
+                i += 1;
             }
+
+            // If we've found a valid frame to emit
+            if (self.frames.items[i].playback_time <= self._playback_time) {
+                self._at = i + 1;
+                return self.frames.items[i];
+            }
+
+            break; // No eligible frame yet
         }
 
-        return null; // All frames exhausted
+        return null; // All frames exhausted or not time for the next one
     }
 
     pub fn saveToFile(self: *const Self, file_name: []const u8) !void {
