@@ -240,7 +240,7 @@ pub fn main() !void {
                     camera = getCamera();
 
                     scenario = try benchmark.getScenario(tapes[current_tape_idx]);
-                    replay_tape = replay.ReplayTape.init(allocator, &scenario);
+                    replay_tape = try replay.ReplayTape.loadFromFile(allocator, scenario.name);
                 }
 
                 // Update at a set FPS
@@ -262,6 +262,7 @@ pub fn main() !void {
                     time_elapsed = 0.0;
 
                     scenario.deinit();
+                    replay_tape.deinit();
                     _menu = replay_menu.toMenu();
                     continue;
                 }
@@ -282,7 +283,7 @@ pub fn main() !void {
                 }
 
                 // 2D
-                scenario.drawLineToClosestBot(&camera, rl.Color.sky_blue);
+                // scenario.drawLineToClosestBot(&camera, rl.Color.sky_blue);
 
                 rl.drawFPS(SCREEN_WIDTH - 200, 40);
             },

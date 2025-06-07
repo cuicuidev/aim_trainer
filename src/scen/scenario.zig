@@ -225,7 +225,7 @@ pub const Clicking = struct {
         _ = self;
 
         for (scenario.bots, frame_data.bots.positions) |*b, pos| {
-            b.setPosition(pos);
+            b.*.setPosition(pos);
         }
     }
 
@@ -282,7 +282,7 @@ pub const Tracking = struct {
         _ = self;
 
         for (scenario.bots, frame_data.bots.positions) |*b, pos| {
-            b.setPosition(pos);
+            b.*.setPosition(pos);
         }
     }
 

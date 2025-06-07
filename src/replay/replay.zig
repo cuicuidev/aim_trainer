@@ -168,7 +168,14 @@ pub const ReplayTape = struct {
     }
 
     pub fn loadFromFile(allocator: std.mem.Allocator, file_name: []const u8) !Self {
-        var file = try std.fs.cwd().openFile(file_name, .{});
+        const path = try std.fmt.allocPrint(
+            allocator,
+            "{s}.tape",
+            .{file_name},
+        );
+        defer allocator.free(path);
+
+        var file = try std.fs.cwd().openFile(path, .{});
         defer file.close();
         const reader = file.reader();
 
@@ -202,7 +209,7 @@ pub const ReplayTape = struct {
             const input_data: FrameInputData = try reader.readStruct(FrameInputData);
 
             // BotData
-            var bot_data = FrameBotData.init(self.allocator, self.scenario_data.n_bots);
+            var bot_data = try FrameBotData.init(self.allocator, self.scenario_data.n_bots);
             for (0..self.scenario_data.n_bots) |i| {
                 bot_data.positions[i] = try reader.readStruct(rl.Vector3);
             }
