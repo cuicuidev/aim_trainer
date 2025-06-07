@@ -10,6 +10,8 @@ const menu = @import("menu/root.zig");
 const bm = @import("benchmark/root.zig");
 const config = @import("config/root.zig");
 
+const MAX_FPS: i32 = 999;
+
 pub const GameState = enum {
     main_menu,
     benchmark_main_menu,
@@ -44,7 +46,7 @@ pub fn main() !void {
 
     rl.setExitKey(rl.KeyboardKey.null);
 
-    // rl.setTargetFPS(60);
+    rl.setTargetFPS(MAX_FPS);
 
     // Game config initialization
     const sensitivity = config.Sensitivity.init(70.0, 1600.0);
