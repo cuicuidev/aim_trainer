@@ -45,7 +45,7 @@ pub const Geometry = union(enum) {
         }
     }
 
-    pub fn getPosition(self: *Self) rl.Vector3 {
+    pub fn getPosition(self: *const Self) rl.Vector3 {
         return switch (self.*) {
             .sphere => |*g| return g.position,
             .capsule => |*g| return g.position,

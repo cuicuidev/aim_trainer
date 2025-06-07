@@ -3,6 +3,7 @@ const std = @import("std");
 const rl = @import("raylib");
 
 const scen = @import("../scen/root.zig");
+const bot = @import("../bot/root.zig");
 
 pub const FrameInputData = extern struct {
     camera_target: rl.Vector3,
@@ -21,9 +22,9 @@ pub const FrameBotData = struct {
         };
     }
 
-    pub fn setPositions(self: *Self, positions: []const rl.Vector3) void {
-        for (0..positions.len) |i| {
-            self.positions[i] = positions[i];
+    pub fn setPositions(self: *Self, bots: []const bot.Bot) void {
+        for (0..bots.len) |i| {
+            self.positions[i] = bots[i].geometry.getPosition();
         }
     }
 
@@ -95,10 +96,12 @@ pub const ReplayTape = struct {
             .fire_button_down = fire_button_down,
         };
 
-        const bots = try FrameBotData.init(
+        var bots = try FrameBotData.init(
             self.allocator,
             scenario_ptr.bot_config.n_bots,
         );
+
+        bots.setPositions(scenario_ptr.bots);
 
         var playback_time: f32 = 0.0;
         if (self.frames.items.len != 0) {
