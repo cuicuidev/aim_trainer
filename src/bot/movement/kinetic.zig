@@ -25,10 +25,10 @@ pub const KineticHandler = struct {
         };
     }
 
-    pub fn step(self: *Self, position: rl.Vector3, dt: f32, prng_ptr: *std.Random.Xoshiro256) rl.Vector3 {
+    pub fn step(self: *Self, position: rl.Vector3, dt: f32, prng_ptr: *std.Random.Xoshiro256, frame_delta: usize) rl.Vector3 {
         self.time += dt;
 
-        const base_accel = self._getBaseAccel(dt, prng_ptr);
+        const base_accel = self._getBaseAccel(dt, prng_ptr, frame_delta);
         const constrained_accel = self._applyAccelConstraints(position, base_accel);
 
         var new_velocity = rl.Vector3.add(self.velocity, rl.Vector3.scale(constrained_accel, dt));
@@ -38,11 +38,11 @@ pub const KineticHandler = struct {
         return rl.Vector3.add(position, rl.Vector3.scale(self.velocity, dt));
     }
 
-    fn _getBaseAccel(self: *Self, dt: f32, prng_ptr: *std.Random.Xoshiro256) rl.Vector3 {
+    fn _getBaseAccel(self: *Self, dt: f32, prng_ptr: *std.Random.Xoshiro256, frame_delta: usize) rl.Vector3 {
         var accel = rl.Vector3.init(0, 0, 0);
         if (self.config.modifiers.modules) |modules_slice_for_loop| {
             for (modules_slice_for_loop) |mod_item| {
-                const result = mod_item.applyFn(mod_item.ctx, self.time + dt, prng_ptr);
+                const result = mod_item.applyFn(mod_item.ctx, self.time + dt, prng_ptr, frame_delta);
                 accel = rl.Vector3.add(accel, result);
             }
         }

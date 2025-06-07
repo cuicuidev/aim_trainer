@@ -8,8 +8,9 @@ pub const SinusoidalWanderModifier = struct {
     amplitude: f32,
     freq: f32,
 
-    pub fn apply(ctx: *const anyopaque, time: f32, prng_ptr: *std.Random.Xoshiro256) rl.Vector3 {
+    pub fn apply(ctx: *const anyopaque, time: f32, prng_ptr: *std.Random.Xoshiro256, frame_delta: usize) rl.Vector3 {
         _ = prng_ptr;
+        _ = frame_delta;
         const self = @as(*const SinusoidalWanderModifier, @ptrCast(@alignCast(ctx)));
         return sinusoidalWander(time, self.amplitude, self.freq);
     }

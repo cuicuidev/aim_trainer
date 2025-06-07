@@ -180,10 +180,10 @@ pub const Scenario = struct {
         );
     }
 
-    pub fn kill(self: *Self, camera: *rl.Camera3D, lmb_pressed: bool, lmb_down: bool, dt: f32) void {
+    pub fn kill(self: *Self, camera: *rl.Camera3D, lmb_pressed: bool, lmb_down: bool, dt: f32, frame_delta: usize) void {
         switch (self.scenario_type) {
-            .clicking => |*s| s.kill(self, camera, lmb_pressed, lmb_down, dt, &self.scenario_tape.prng),
-            .tracking => |*s| s.kill(self, camera, lmb_pressed, lmb_down, dt, &self.scenario_tape.prng),
+            .clicking => |*s| s.kill(self, camera, lmb_pressed, lmb_down, dt, &self.scenario_tape.prng, frame_delta),
+            .tracking => |*s| s.kill(self, camera, lmb_pressed, lmb_down, dt, &self.scenario_tape.prng, frame_delta),
         }
     }
 
@@ -201,9 +201,18 @@ pub const Clicking = struct {
 
     const Self = @This();
 
-    pub fn kill(self: *Self, scenario: *Scenario, camera: *rl.Camera3D, lmb_pressed: bool, lmb_down: bool, dt: f32, prng_ptr: *std.Random.Xoshiro256) void {
+    pub fn kill(
+        self: *Self,
+        scenario: *Scenario,
+        camera: *rl.Camera3D,
+        lmb_pressed: bool,
+        lmb_down: bool,
+        dt: f32,
+        prng_ptr: *std.Random.Xoshiro256,
+        frame_delta: usize,
+    ) void {
         for (scenario.bots) |*b| {
-            b.step(dt, prng_ptr);
+            b.step(dt, prng_ptr, frame_delta);
         }
 
         _ = lmb_down;
@@ -240,9 +249,18 @@ pub const Tracking = struct {
 
     const Self = @This();
 
-    pub fn kill(self: *Self, scenario: *Scenario, camera: *rl.Camera3D, lmb_pressed: bool, lmb_down: bool, dt: f32, prng_ptr: *std.Random.Xoshiro256) void {
+    pub fn kill(
+        self: *Self,
+        scenario: *Scenario,
+        camera: *rl.Camera3D,
+        lmb_pressed: bool,
+        lmb_down: bool,
+        dt: f32,
+        prng_ptr: *std.Random.Xoshiro256,
+        frame_delta: usize,
+    ) void {
         for (scenario.bots) |*b| {
-            b.step(dt, prng_ptr);
+            b.step(dt, prng_ptr, frame_delta);
         }
 
         _ = lmb_pressed;

@@ -206,7 +206,7 @@ pub fn main() !void {
                 const lmb_pressed = rl.isMouseButtonPressed(rl.MouseButton.left);
                 const lmb_down = rl.isMouseButtonDown(rl.MouseButton.left);
 
-                scenario.kill(&camera, lmb_pressed, lmb_down, delta_time);
+                scenario.kill(&camera, lmb_pressed, lmb_down, delta_time, 1);
 
                 try scenario.scenario_tape.record(
                     delta_time,
@@ -260,7 +260,7 @@ pub fn main() !void {
 
                     crosshair.updateTrail(&camera);
                     const dt = 1.0 / scenario.scenario_tape.target_fps;
-                    scenario.kill(&camera, input.lmb_pressed, input.lmb_down, dt);
+                    scenario.kill(&camera, input.lmb_pressed, input.lmb_down, dt, input.frame_delta);
                 }
 
                 // Scenario end update

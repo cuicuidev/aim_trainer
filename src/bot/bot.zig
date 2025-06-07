@@ -29,8 +29,8 @@ pub const Bot = struct {
         return self.geometry.hitScan(camera);
     }
 
-    pub fn step(self: *Self, dt: f32, prng_ptr: *std.Random.Xoshiro256) void {
-        self.geometry.kineticHandlerStep(dt, prng_ptr);
+    pub fn step(self: *Self, dt: f32, prng_ptr: *std.Random.Xoshiro256, frame_delta: usize) void {
+        self.geometry.kineticHandlerStep(dt, prng_ptr, frame_delta);
     }
 
     pub fn setPosition(self: *Self, position: rl.Vector3) void {

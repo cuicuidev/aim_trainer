@@ -7,10 +7,16 @@ const m = @import("modifiers.zig");
 pub const NoiseWanderModifier = struct {
     strength: f32,
 
-    pub fn apply(ctx: *const anyopaque, dt: f32, prng_ptr: *std.Random.Xoshiro256) rl.Vector3 {
+    pub fn apply(ctx: *const anyopaque, dt: f32, prng_ptr: *std.Random.Xoshiro256, frame_delta: usize) rl.Vector3 {
         _ = dt;
         const self = @as(*const NoiseWanderModifier, @ptrCast(@alignCast(ctx)));
-        return noiseWander(self.strength, prng_ptr);
+        var wander = rl.Vector3.init(0.0, 0.0, 0.0);
+
+        var i: usize = 0;
+        while (i < frame_delta) : (i += 1) {
+            wander = wander.add(noiseWander(self.strength, prng_ptr));
+        }
+        return wander;
     }
 
     pub fn toModule(self: *const NoiseWanderModifier, weight: f32) m.MovementModule {

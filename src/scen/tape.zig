@@ -3,6 +3,7 @@ const rl = @import("raylib");
 
 pub const FrameInput = extern struct {
     frame_time: f32,
+    frame_delta: usize, // n frames since last frame
     mouse_delta: rl.Vector2,
     lmb_pressed: bool,
     lmb_down: bool,
@@ -24,6 +25,7 @@ pub const ScenarioTape = struct {
     accumulated_mouse_delta: rl.Vector2 = rl.Vector2.init(0.0, 0.0),
     accumulated_lmb_pressed: bool = false,
     accumulated_lmb_down: bool = false,
+    frame_counter: usize = 0,
 
     const Self = @This();
 
@@ -76,6 +78,7 @@ pub const ScenarioTape = struct {
         while (self.time_accumulator >= frame_interval) {
             const input = FrameInput{
                 .frame_time = frame_interval,
+                .frame_delta = self.frame_counter,
                 .mouse_delta = self.accumulated_mouse_delta,
                 .lmb_pressed = self.accumulated_lmb_pressed,
                 .lmb_down = self.accumulated_lmb_down,
@@ -83,6 +86,7 @@ pub const ScenarioTape = struct {
             try self.frames.append(input);
 
             self.time_accumulator -= frame_interval;
+            self.frame_counter = 0;
 
             // Reset accumulators for next frame period
             self.accumulated_mouse_delta = rl.Vector2.init(0.0, 0.0);
