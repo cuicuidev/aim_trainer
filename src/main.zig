@@ -181,6 +181,7 @@ pub fn main() !void {
                     STATE = GameState.benchmark_main_menu;
                     time_elapsed = 0.0;
 
+                    // TODO: Large files take a while to store. They also take up much space.
                     try replay_tape.saveToFile(scenario.name);
 
                     replay_tape.deinit();
