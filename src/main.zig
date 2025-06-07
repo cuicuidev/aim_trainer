@@ -4,6 +4,7 @@ const rl = @import("raylib");
 const rg = @import("raygui");
 
 const scen = @import("scen/root.zig");
+const replay = @import("replay/root.zig");
 const bot = @import("bot/root.zig");
 const menu = @import("menu/root.zig");
 const bm = @import("benchmark/root.zig");
@@ -28,9 +29,6 @@ pub fn main() !void {
     const dims = getMainMonitorDimensions();
     const SCREEN_WIDTH = dims[0];
     const SCREEN_HEIGHT = dims[1];
-
-    // const HALF_SCREEN_WIDTH = @divFloor(SCREEN_WIDTH, @as(i32, 2));
-    // const HALF_SCREEN_HEIGHT = @divFloor(SCREEN_HEIGHT, @as(i32, 2));
 
     const config_flags = rl.ConfigFlags{
         .fullscreen_mode = true,
@@ -74,16 +72,16 @@ pub fn main() !void {
     var scenario: scen.Scenario = undefined;
     errdefer scenario.deinit();
 
-    // Game menu initialization
+    var replay_tape: replay.ReplayTape = undefined;
+    errdefer replay_tape.deinit();
 
-    var tapes: [4][:0]const u8 = .{
+    // Game menu initialization
+    var tapes: [2][:0]const u8 = .{
         "ww2ts",
-        "ww3ts",
-        "ww4ts",
         "controlsphere",
     };
 
-    var current_tape_idx: u2 = 0;
+    var current_tape_idx: u1 = 0;
 
     var main_menu = menu.MainMenu.init(SCREEN_HEIGHT, SCREEN_WIDTH, "Aimalytics");
     var benchmark_menu = menu.BenchmarkMenu.init(SCREEN_HEIGHT, SCREEN_WIDTH, "Benchmark", &benchmark);
@@ -172,6 +170,7 @@ pub fn main() !void {
                     rl.disableCursor();
                     camera = getCamera();
                     scenario = try benchmark.nextScenario();
+                    replay_tape = replay.ReplayTape.init(allocator, &scenario);
                 }
 
                 // Scenario end update
@@ -182,9 +181,9 @@ pub fn main() !void {
                     STATE = GameState.benchmark_main_menu;
                     time_elapsed = 0.0;
 
-                    const scen_name = scenario.name;
-                    try scenario.scenario_tape.saveToFile(scen_name);
+                    try replay_tape.saveToFile(scenario.name);
 
+                    replay_tape.deinit();
                     scenario.deinit();
 
                     continue;
@@ -208,11 +207,12 @@ pub fn main() !void {
 
                 scenario.kill(&camera, lmb_pressed, lmb_down, delta_time, 1);
 
-                try scenario.scenario_tape.record(
+                try replay_tape.record(
                     delta_time,
-                    mouse_delta,
+                    camera.target,
                     lmb_pressed,
                     lmb_down,
+                    &scenario,
                 );
 
                 // RENDER ----------------------------------------------------------------------------------
@@ -240,31 +240,24 @@ pub fn main() !void {
                     camera = getCamera();
 
                     scenario = try benchmark.getScenario(tapes[current_tape_idx]);
-                    try scenario.loadTape();
+                    replay_tape = replay.ReplayTape.init(allocator, &scenario);
                 }
 
                 // Update at a set FPS
                 const delta_time = rl.getFrameTime();
                 time_elapsed += delta_time;
 
-                const frame = scenario.scenario_tape.nextFrame(delta_time);
+                const frame = replay_tape.nextFrame(delta_time);
 
-                if (frame) |input| {
-                    const rotation = rl.Vector3.init(
-                        input.mouse_delta.x,
-                        input.mouse_delta.y,
-                        0.0,
-                    ).scale(sensitivity.value);
-                    const movement = rl.Vector3.init(0.0, 0.0, 0.0);
-                    rl.updateCameraPro(&camera, movement, rotation, 0.0);
-
+                if (frame) |data| {
+                    camera.target = data.input.camera_target;
                     crosshair.updateTrail(&camera);
-                    const dt = 1.0 / scenario.scenario_tape.target_fps;
-                    scenario.kill(&camera, input.lmb_pressed, input.lmb_down, dt, input.frame_delta);
+
+                    scenario.replay(data);
                 }
 
                 // Scenario end update
-                if (time_elapsed >= scenario.duration_ms or scenario.scenario_tape.replay_index >= scenario.scenario_tape.frames.items.len) {
+                if (time_elapsed >= scenario.duration_ms or replay_tape._at >= replay_tape.frames.items.len) {
                     STATE = GameState.replay_main_menu;
                     time_elapsed = 0.0;
 
