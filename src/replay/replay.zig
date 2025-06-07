@@ -36,6 +36,7 @@ pub const FrameData = struct {
     time: f32,
     input: FrameInputData,
     bots: FrameBotData,
+    playback_time: f32,
 };
 
 pub const ScenarioData = extern struct {
@@ -99,10 +100,16 @@ pub const ReplayTape = struct {
             scenario_ptr.bot_config.n_bots,
         );
 
+        var playback_time: f32 = 0.0;
+        if (self.frames.items.len != 0) {
+            playback_time = self.frames.items[self.frames.items.len - 1].playback_time;
+        }
+
         const frame = FrameData{
             .time = delta_time,
             .input = input,
             .bots = bots,
+            .playback_time = playback_time + delta_time,
         };
         try self.frames.append(frame);
     }
@@ -113,10 +120,7 @@ pub const ReplayTape = struct {
             const frame = self.frames.items[self._at];
 
             // Sum of all previous frame times up to this frame
-            var total_time: f32 = 0.0;
-            for (0..self._at) |i| {
-                total_time += self.frames.items[i].time;
-            }
+            const total_time: f32 = self.frames.items[self._at].playback_time;
 
             // If the playback time has caught up with or surpassed this frame
             if (self._playback_time >= total_time) {
@@ -164,6 +168,10 @@ pub const ReplayTape = struct {
             for (frame.bots.positions) |position| {
                 try writer.writeStruct(position);
             }
+
+            // Playback
+            const playback_bit = @as(u32, @bitCast(frame.playback_time));
+            try writer.writeInt(u32, playback_bit, std.builtin.Endian.big);
         }
     }
 
@@ -214,11 +222,16 @@ pub const ReplayTape = struct {
                 bot_data.positions[i] = try reader.readStruct(rl.Vector3);
             }
 
+            // Playback
+            const playback_bit: u32 = try reader.readInt(u32, std.builtin.Endian.big);
+            const playback = @as(f32, @bitCast(playback_bit));
+
             // FrameData
             const frame_data = FrameData{
                 .time = time,
                 .input = input_data,
                 .bots = bot_data,
+                .playback_time = playback,
             };
             try self.frames.append(frame_data);
         }
