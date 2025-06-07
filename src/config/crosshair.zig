@@ -11,7 +11,7 @@ pub const Crosshair = struct {
     trail_array_pos: usize, // Current index in trail_array to write the next point (circular buffer)
     trail_count: usize, // Number of valid points currently in trail_array (from 0 to trail_array.len)
 
-    const TRAIL_CAPACITY = 64; // Max number of points in the trail
+    const TRAIL_CAPACITY = 1024; // Max number of points in the trail
     const CROSSHAIR_DISTANCE: f32 = 1.0; // How far in front of the camera the 3D crosshair point is
 
     const Self = @This();
