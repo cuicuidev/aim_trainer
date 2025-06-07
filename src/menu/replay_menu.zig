@@ -23,33 +23,35 @@ pub const ReplayMenu = struct {
     pub fn init(screen_height: i32, screen_width: i32, title: [:0]const u8, tapes: [][:0]const u8, tape_idx_ptr: *u1) Self {
         const screen_height_f: f32 = @as(f32, @floatFromInt(screen_height));
         const screen_width_f: f32 = @as(f32, @floatFromInt(screen_width));
+        const small_button_height: f32 = screen_height_f * 0.02;
+        const small_button_width: f32 = screen_width_f * 0.05;
         const button_height: f32 = screen_height_f * 0.08;
         const button_width: f32 = screen_width_f * 0.2;
 
         const pos_1_rect = rl.Rectangle.init(
-            (screen_width_f - button_width) / 2,
-            screen_height_f / 2 - button_height * 1.5,
-            button_width,
-            button_height,
+            ((screen_width_f - small_button_width) / 3) * 2,
+            screen_height_f / 2 - small_button_height * 0.5,
+            small_button_width,
+            small_button_height,
         );
 
         const pos_2_rect = rl.Rectangle.init(
             (screen_width_f - button_width) / 2,
-            screen_height_f / 2 - button_height * 0.6,
+            screen_height_f / 2 - button_height * 0.5,
             button_width,
             button_height,
         );
 
         const pos_3_rect = rl.Rectangle.init(
-            (screen_width_f - button_width) / 2,
-            screen_height_f / 2 + button_height * 0.7,
-            button_width,
-            button_height,
+            (screen_width_f - small_button_width) / 3,
+            screen_height_f / 2 - small_button_height * 0.5,
+            small_button_width,
+            small_button_height,
         );
 
         const pos_4_rect = rl.Rectangle.init(
             (screen_width_f - button_width) / 2,
-            screen_height_f / 2 + button_height * 2.5,
+            screen_height_f / 2 + button_height * 1.5,
             button_width,
             button_height,
         );
