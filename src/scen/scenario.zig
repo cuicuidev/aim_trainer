@@ -8,7 +8,7 @@ const bot = @import("../bot/root.zig");
 const geo = bot.geo;
 const mov = bot.mov;
 
-const tape = @import("tape.zig");
+const rep = @import("../replay/root.zig");
 
 pub const ScenarioType = union(enum) {
     clicking: Clicking,
@@ -27,7 +27,7 @@ pub const Scenario = struct {
     // Base
     allocator: std.mem.Allocator,
     name: []const u8,
-    scenario_tape: tape.ScenarioTape,
+    hash: [4]u64 = .{ 0, 0, 0, 0 },
 
     // Environment
     spawn: sp.Spawn,
@@ -38,6 +38,7 @@ pub const Scenario = struct {
     duration_ms: f32,
 
     // Variables
+    prng: std.Random.Xoshiro256,
     bots: []bot.Bot,
 
     const Self = @This();
@@ -59,25 +60,14 @@ pub const Scenario = struct {
             bot_config.n_bots,
         );
 
-        std.debug.print("Scenario.init | s[0] = {}\n", .{prng.s[0]});
-        std.debug.print("Scenario.init | s[1] = {}\n", .{prng.s[1]});
-        std.debug.print("Scenario.init | s[2] = {}\n", .{prng.s[2]});
-        std.debug.print("Scenario.init | s[3] = {}\n\n", .{prng.s[3]});
-
-        const scenario_tape = tape.ScenarioTape.init(
-            allocator,
-            144.0,
-            prng.s,
-        );
-
         var self = Self{
             .allocator = allocator,
             .name = name,
-            .scenario_tape = scenario_tape,
             .spawn = spawn,
             .scenario_type = scenario_type,
             .bot_config = bot_config,
             .duration_ms = duration_ms,
+            .prng = prng,
             .bots = bots,
         };
 
@@ -104,7 +94,6 @@ pub const Scenario = struct {
     pub fn deinit(self: *Self) void {
         self.bot_config.geometry.deinit(self.allocator);
         self.allocator.free(self.bots);
-        self.scenario_tape.deinit();
     }
 
     fn spawnBot(self: *Self, idx: usize) void {
@@ -116,19 +105,8 @@ pub const Scenario = struct {
     }
 
     fn randomizeBotPosition(self: *Self, idx: usize) void {
-        const pos = self.spawn.getRandomPosition(&self.scenario_tape.prng);
+        const pos = self.spawn.getRandomPosition(&self.prng);
         self.bots[idx].geometry.setPosition(pos);
-    }
-
-    pub fn loadTape(self: *Self) !void {
-        const path = try std.fmt.allocPrint(self.allocator, "{s}.tape", .{self.name});
-        defer self.allocator.free(path);
-        self.scenario_tape.deinit();
-        self.scenario_tape = try tape.ScenarioTape.loadFromFile(self.allocator, path);
-        var i: usize = 0;
-        while (i < self.bot_config.n_bots) : (i += 1) {
-            self.spawnBot(i);
-        }
     }
 
     pub fn draw(self: *Self) void {
@@ -182,8 +160,15 @@ pub const Scenario = struct {
 
     pub fn kill(self: *Self, camera: *rl.Camera3D, lmb_pressed: bool, lmb_down: bool, dt: f32, frame_delta: usize) void {
         switch (self.scenario_type) {
-            .clicking => |*s| s.kill(self, camera, lmb_pressed, lmb_down, dt, &self.scenario_tape.prng, frame_delta),
-            .tracking => |*s| s.kill(self, camera, lmb_pressed, lmb_down, dt, &self.scenario_tape.prng, frame_delta),
+            .clicking => |*s| s.kill(self, camera, lmb_pressed, lmb_down, dt, &self.prng, frame_delta),
+            .tracking => |*s| s.kill(self, camera, lmb_pressed, lmb_down, dt, &self.prng, frame_delta),
+        }
+    }
+
+    pub fn replay(self: *Self, frame_data: rep.FrameData) void {
+        switch (self.scenario_type) {
+            .clicking => |*s| s.replay(self, frame_data),
+            .tracking => |*s| s.replay(self, frame_data),
         }
     }
 
@@ -232,6 +217,18 @@ pub const Clicking = struct {
         }
     }
 
+    pub fn replay(
+        self: *Self,
+        scenario: *Scenario,
+        frame_data: rep.FrameData,
+    ) void {
+        _ = self;
+
+        for (scenario.bots, frame_data.bots.positions) |*b, pos| {
+            b.setPosition(pos);
+        }
+    }
+
     pub fn getScore(self: *Self) f64 {
         if (self.n_clicks == 0) {
             return 0.0;
@@ -275,6 +272,18 @@ pub const Tracking = struct {
             }
         }
         self.total_frames += 1;
+    }
+
+    pub fn replay(
+        self: *Self,
+        scenario: *Scenario,
+        frame_data: rep.FrameData,
+    ) void {
+        _ = self;
+
+        for (scenario.bots, frame_data.bots.positions) |*b, pos| {
+            b.setPosition(pos);
+        }
     }
 
     pub fn getScore(self: *Self) f64 {
